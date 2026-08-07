@@ -90,8 +90,13 @@ export const VideoCallView: React.FC = () => {
     if (rtcManagerRef.current) {
       const state = rtcManagerRef.current.toggleVideo();
       setIsCamOff(!state);
-    } else {
-      setIsCamOff(!isCamOff);
+    }
+  };
+
+  const handleSaveNotes = () => {
+    if (currentAppt) {
+      saveSessionNote(currentAppt.id, noteContent);
+      alert('Session notes saved securely!');
     }
   };
 
