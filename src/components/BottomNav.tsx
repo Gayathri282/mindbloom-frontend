@@ -49,26 +49,30 @@ export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab })
   }
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-xl border-t border-emerald-900/10 shadow-2xl py-2 px-3">
-      <div className="max-w-md md:max-w-2xl mx-auto flex items-center justify-around">
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = activeTab === item.id;
-          return (
-            <button
-              key={item.id}
-              onClick={() => setActiveTab(item.id)}
-              className={`flex flex-col items-center gap-1 px-3 py-1.5 rounded-2xl transition-all duration-200 ${
-                isActive
-                  ? 'bg-emerald-700 text-white font-bold shadow-md scale-105'
-                  : 'text-slate-600 hover:text-emerald-800 hover:bg-emerald-50/80'
-              }`}
-            >
-              <Icon className={`w-5 h-5 ${isActive ? 'text-white' : 'text-emerald-700'}`} />
-              <span className="text-[11px] tracking-tight">{item.label}</span>
-            </button>
-          );
-        })}
+    <div className="fixed bottom-4 left-4 right-4 z-50 pointer-events-none">
+      <div className="max-w-md md:max-w-2xl mx-auto glass-dock rounded-3xl p-1.5 sm:p-2 pointer-events-auto shadow-xl">
+        <div className="flex items-center justify-around">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = activeTab === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => setActiveTab(item.id)}
+                className={`flex flex-col items-center gap-1 p-2 sm:px-3.5 sm:py-2 rounded-2xl transition-all duration-300 ${
+                  isActive
+                    ? 'blue-gradient-btn text-white font-bold scale-105'
+                    : 'text-slate-600 hover:text-sky-700 hover:bg-sky-50/70'
+                }`}
+                title={item.label}
+              >
+                <Icon className={`w-5 h-5 ${isActive ? 'text-white' : 'text-sky-600'}`} />
+                {/* On mobile devices, hide text labels and show ONLY icons */}
+                <span className="text-[11px] tracking-tight hidden sm:inline">{item.label}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

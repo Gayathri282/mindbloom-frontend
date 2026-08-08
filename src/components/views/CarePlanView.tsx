@@ -6,16 +6,12 @@ import {
   FileText,
   CheckSquare,
   Sparkles,
-  ShieldCheck,
   BookOpen,
-  Plus,
-  RefreshCw,
-  Award,
   ChevronRight,
 } from 'lucide-react';
 
 export const CarePlanView: React.FC = () => {
-  const { user, carePlan, generateAiStarterPlan } = useApp();
+  const { carePlan, generateAiStarterPlan } = useApp();
 
   const [intakeGoal, setIntakeGoal] = useState('');
   const [intakeFeeling, setIntakeFeeling] = useState('');
@@ -34,12 +30,12 @@ export const CarePlanView: React.FC = () => {
   const isTherapistAssigned = carePlan.source === 'therapist';
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6 pb-12">
+    <div className="max-w-5xl mx-auto space-y-6 pb-16">
       {/* Header Banner */}
-      <div className="bg-white rounded-3xl p-6 sm:p-8 border border-emerald-100 shadow-sm relative overflow-hidden">
+      <div className="refreshing-card p-6 sm:p-8 relative overflow-hidden">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-emerald-700 text-white flex items-center justify-center shadow-md">
+            <div className="w-14 h-14 rounded-2xl blue-gradient-btn text-white flex items-center justify-center shadow-md">
               <FileText className="w-7 h-7" />
             </div>
             <div>
@@ -47,7 +43,7 @@ export const CarePlanView: React.FC = () => {
                 <span
                   className={`px-3 py-0.5 text-xs font-bold rounded-full ${
                     isTherapistAssigned
-                      ? 'bg-emerald-100 text-emerald-900 border border-emerald-300'
+                      ? 'bg-sky-100 text-sky-800 border border-sky-300'
                       : 'bg-amber-100 text-amber-900 border border-amber-300'
                   }`}
                 >
@@ -57,10 +53,10 @@ export const CarePlanView: React.FC = () => {
                   Updated {new Date(carePlan.updated_at).toLocaleDateString()}
                 </span>
               </div>
-              <h2 className="text-xl sm:text-2xl font-bold text-slate-900">
+              <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900">
                 {carePlan.title}
               </h2>
-              <p className="text-xs text-slate-600 mt-1 max-w-xl">
+              <p className="text-xs text-slate-600 mt-1 max-w-xl font-medium">
                 {carePlan.summary}
               </p>
             </div>
@@ -68,15 +64,15 @@ export const CarePlanView: React.FC = () => {
         </div>
       </div>
 
-      {/* Priority Logic Branching: Show Plan if Therapist assigned OR AI generated */}
+      {/* Priority Logic Branching */}
       {isTherapistAssigned ? (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left 2 Cols: Coping Strategies & Daily Exercises */}
+          {/* Left 2 Cols */}
           <div className="lg:col-span-2 space-y-6">
             {/* Coping Strategies Section */}
-            <div className="bg-white rounded-3xl p-6 border border-emerald-100 shadow-sm">
+            <div className="refreshing-card p-6">
               <h3 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-emerald-700" />
+                <Sparkles className="w-5 h-5 text-sky-600" />
                 Assigned Coping Strategies
               </h3>
 
@@ -84,15 +80,15 @@ export const CarePlanView: React.FC = () => {
                 {carePlan.coping_strategies.map((cs) => (
                   <div
                     key={cs.id}
-                    className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 hover:border-emerald-300 transition-colors"
+                    className="p-4 rounded-2xl bg-slate-50/80 border border-slate-200/80 hover:border-sky-300 transition-colors"
                   >
                     <div className="flex items-center justify-between mb-1.5">
                       <h4 className="text-sm font-bold text-slate-900">{cs.title}</h4>
-                      <span className="px-2.5 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-full">
+                      <span className="px-2.5 py-0.5 bg-sky-100 text-sky-800 text-[10px] font-bold rounded-full border border-sky-200">
                         {cs.category}
                       </span>
                     </div>
-                    <p className="text-xs text-slate-600 leading-relaxed">
+                    <p className="text-xs text-slate-600 leading-relaxed font-medium">
                       {cs.description}
                     </p>
                   </div>
@@ -101,9 +97,9 @@ export const CarePlanView: React.FC = () => {
             </div>
 
             {/* Daily Exercises Checklist */}
-            <div className="bg-white rounded-3xl p-6 border border-emerald-100 shadow-sm">
+            <div className="refreshing-card p-6">
               <h3 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
-                <CheckSquare className="w-5 h-5 text-emerald-700" />
+                <CheckSquare className="w-5 h-5 text-sky-600" />
                 Daily Mindful Exercises Checklist
               </h3>
 
@@ -116,8 +112,8 @@ export const CarePlanView: React.FC = () => {
                       onClick={() => toggleExercise(ex.id)}
                       className={`p-4 rounded-2xl border cursor-pointer transition-all flex items-center justify-between ${
                         isChecked
-                          ? 'bg-emerald-50 border-emerald-300 text-emerald-950 font-medium'
-                          : 'bg-slate-50 border-slate-200 hover:bg-slate-100 text-slate-800'
+                          ? 'bg-sky-50/90 border-sky-300 text-sky-950 font-medium'
+                          : 'bg-slate-50/80 border-slate-200 hover:bg-slate-100/70 text-slate-800'
                       }`}
                     >
                       <div className="flex items-center gap-3">
@@ -125,7 +121,7 @@ export const CarePlanView: React.FC = () => {
                           type="checkbox"
                           checked={isChecked}
                           onChange={() => {}}
-                          className="w-4 h-4 text-emerald-700 rounded focus:ring-emerald-500"
+                          className="w-4 h-4 text-sky-600 rounded focus:ring-sky-500"
                         />
                         <div>
                           <p className={`text-xs font-bold ${isChecked ? 'line-through opacity-75' : ''}`}>
@@ -138,7 +134,7 @@ export const CarePlanView: React.FC = () => {
                       </div>
 
                       {isChecked && (
-                        <span className="text-[11px] font-bold text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full">
+                        <span className="text-[11px] font-bold text-sky-700 bg-sky-100 px-2.5 py-0.5 rounded-full">
                           Completed Today ✓
                         </span>
                       )}
@@ -151,9 +147,9 @@ export const CarePlanView: React.FC = () => {
 
           {/* Right Column: Assigned Clinical Resources */}
           <div className="space-y-6">
-            <div className="bg-white rounded-3xl p-6 border border-emerald-100 shadow-sm">
+            <div className="refreshing-card p-6">
               <h3 className="text-base font-bold text-slate-900 mb-3 flex items-center gap-2">
-                <BookOpen className="w-5 h-5 text-teal-700" />
+                <BookOpen className="w-5 h-5 text-cyan-600" />
                 Recommended Reading & Guides
               </h3>
 
@@ -166,7 +162,7 @@ export const CarePlanView: React.FC = () => {
                       e.preventDefault();
                       alert(`Opening document: ${res.title}`);
                     }}
-                    className="p-3 bg-slate-50 hover:bg-emerald-50 rounded-2xl border border-slate-200 block text-xs font-semibold text-slate-800 transition-colors"
+                    className="p-3 bg-slate-50 hover:bg-sky-50/80 rounded-2xl border border-slate-200 block text-xs font-semibold text-slate-800 transition-colors"
                   >
                     <p className="flex items-center justify-between">
                       <span>{res.title}</span>
@@ -179,17 +175,17 @@ export const CarePlanView: React.FC = () => {
           </div>
         </div>
       ) : (
-        /* Self-Service Starter Intake Form if no therapist plan exists */
-        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-emerald-100 shadow-sm max-w-2xl mx-auto space-y-6">
+        /* Self-Service Starter Intake Form */
+        <div className="refreshing-card p-6 sm:p-8 max-w-2xl mx-auto space-y-6">
           <div className="text-center">
-            <div className="w-12 h-12 rounded-2xl bg-teal-100 text-teal-800 mx-auto mb-3 flex items-center justify-center">
+            <div className="w-12 h-12 rounded-2xl bg-cyan-100/80 text-cyan-700 mx-auto mb-3 flex items-center justify-center">
               <Sparkles className="w-6 h-6" />
             </div>
             <h3 className="text-lg font-bold text-slate-900">
               Create Your AI Starter Care Plan
             </h3>
-            <p className="text-xs text-slate-600 mt-1">
-              No therapist-assigned plan has been published yet. Complete this short intake to generate an immediate starter routine.
+            <p className="text-xs text-slate-600 mt-1 font-medium">
+              Complete this short intake to generate an immediate starter routine.
             </p>
           </div>
 
@@ -204,7 +200,7 @@ export const CarePlanView: React.FC = () => {
                 placeholder="e.g. Mild work anxiety, trouble falling asleep"
                 value={intakeFeeling}
                 onChange={(e) => setIntakeFeeling(e.target.value)}
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:bg-white focus:border-emerald-600 focus:outline-none"
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:bg-white focus:border-sky-500 focus:outline-none"
               />
             </div>
 
@@ -218,13 +214,13 @@ export const CarePlanView: React.FC = () => {
                 placeholder="e.g. Learn grounding breathwork and reframing negative thoughts"
                 value={intakeGoal}
                 onChange={(e) => setIntakeGoal(e.target.value)}
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:bg-white focus:border-emerald-600 focus:outline-none"
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:bg-white focus:border-sky-500 focus:outline-none"
               />
             </div>
 
             <button
               type="submit"
-              className="w-full py-3 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs rounded-xl shadow-md transition-all"
+              className="w-full py-3 blue-gradient-btn text-white font-bold text-xs rounded-xl shadow-md transition-all"
             >
               Generate AI Starter Care Plan
             </button>

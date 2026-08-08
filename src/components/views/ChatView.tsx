@@ -8,15 +8,11 @@ import {
   Sparkles,
   Send,
   ShieldCheck,
-  User,
   Bot,
-  AlertTriangle,
   Lock,
-  HeartHandshake,
   Pill,
   Download,
   CheckCircle,
-  FileText,
   Stethoscope,
 } from 'lucide-react';
 
@@ -57,22 +53,22 @@ export const ChatView: React.FC = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-4 pb-10">
+    <div className="max-w-4xl mx-auto space-y-4 pb-16">
       {/* Top Thread Switcher */}
-      <div className="bg-white rounded-3xl p-3 border border-emerald-100 shadow-sm flex items-center justify-between">
-        <div className="flex bg-slate-100 p-1 rounded-2xl w-full sm:w-auto">
-          {/* AI Support Assistant Tab (Visually Distinct Accent) */}
+      <div className="refreshing-card p-2.5 flex items-center justify-between">
+        <div className="flex bg-slate-100/80 p-1 rounded-2xl w-full sm:w-auto">
+          {/* AI Support Assistant Tab */}
           <button
             onClick={() => setActiveTab('ai')}
             className={`flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold transition-all ${
               activeTab === 'ai'
-                ? 'bg-gradient-to-r from-teal-700 to-emerald-700 text-white shadow-xs'
+                ? 'blue-gradient-btn text-white shadow-xs'
                 : 'text-slate-700 hover:text-slate-900'
             }`}
           >
-            <Sparkles className="w-4 h-4 text-amber-300" />
+            <Sparkles className="w-4 h-4 text-amber-200" />
             AI Support Assistant
-            <span className="bg-emerald-800 text-[10px] text-white px-2 py-0.5 rounded-full font-semibold">
+            <span className="bg-sky-950/40 text-[10px] text-white px-2 py-0.5 rounded-full font-semibold">
               24/7 Safety
             </span>
           </button>
@@ -82,11 +78,11 @@ export const ChatView: React.FC = () => {
             onClick={() => setActiveTab('therapist')}
             className={`flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold transition-all ${
               activeTab === 'therapist'
-                ? 'bg-emerald-800 text-white shadow-xs'
+                ? 'bg-slate-900 text-white shadow-xs'
                 : 'text-slate-700 hover:text-slate-900'
             }`}
           >
-            <MessageSquare className="w-4 h-4 text-teal-300" />
+            <MessageSquare className="w-4 h-4 text-sky-300" />
             Dr. Sarah Jenkins Thread
             {!isChatUnlocked && (
               <Lock className="w-3 h-3 text-amber-300 ml-1" />
@@ -94,36 +90,36 @@ export const ChatView: React.FC = () => {
           </button>
         </div>
 
-        <div className="hidden sm:flex items-center gap-2 px-3 py-1 bg-emerald-50 rounded-full border border-emerald-200/60 text-xs font-semibold text-emerald-900">
-          <ShieldCheck className="w-4 h-4 text-emerald-700" />
+        <div className="hidden sm:flex items-center gap-2 px-3 py-1 bg-sky-50/80 rounded-full border border-sky-200/60 text-xs font-semibold text-sky-800">
+          <ShieldCheck className="w-4 h-4 text-sky-600" />
           Encrypted & Confidential
         </div>
       </div>
 
       {/* Main Message Window */}
-      <div className="bg-white rounded-3xl border border-emerald-100 shadow-sm flex flex-col h-[600px] overflow-hidden">
+      <div className="refreshing-card border border-sky-100 flex flex-col h-[600px] overflow-hidden">
         {/* Header Bar depending on active thread */}
         {activeTab === 'ai' ? (
-          <div className="bg-gradient-to-r from-emerald-900 via-teal-900 to-slate-900 p-4 text-white flex items-center justify-between">
+          <div className="bg-gradient-to-r from-sky-700 via-cyan-700 to-indigo-800 p-4 text-white flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-teal-500/30 border border-teal-300/40 text-teal-200 flex items-center justify-center shadow-xs">
+              <div className="w-10 h-10 rounded-2xl bg-white/20 border border-white/30 text-white flex items-center justify-center shadow-xs">
                 <Bot className="w-6 h-6" />
               </div>
               <div>
                 <h3 className="text-sm font-bold flex items-center gap-2">
                   MindBloom AI Mindfulness Companion
-                  <span className="text-[10px] bg-teal-400/20 text-teal-200 px-2 py-0.5 rounded-full border border-teal-400/30">
-                    Psychoeducation Only
+                  <span className="text-[10px] bg-white/20 text-white px-2 py-0.5 rounded-full border border-white/30 font-semibold">
+                    Psychoeducation
                   </span>
                 </h3>
-                <p className="text-[11px] text-teal-100">
+                <p className="text-[11px] text-sky-100">
                   Grounding strategies, relaxation exercises, & automatic crisis detection
                 </p>
               </div>
             </div>
           </div>
         ) : (
-          <div className="bg-emerald-800 p-4 text-white flex items-center justify-between">
+          <div className="bg-gradient-to-r from-sky-900 to-indigo-900 p-4 text-white flex items-center justify-between">
             <div className="flex items-center gap-3">
               <img
                 src="https://images.unsplash.com/photo-1594824813566-78a9c3d4a4d6?w=150&auto=format&fit=crop&q=80"
@@ -132,7 +128,7 @@ export const ChatView: React.FC = () => {
               />
               <div>
                 <h3 className="text-sm font-bold">Dr. Sarah Jenkins, Psy.D.</h3>
-                <p className="text-[11px] text-emerald-100">
+                <p className="text-[11px] text-sky-100">
                   {isChatUnlocked
                     ? 'Permanent Consultation Thread Active'
                     : 'Unlocked after your first booked consultation'}
@@ -144,21 +140,21 @@ export const ChatView: React.FC = () => {
 
         {/* Lock Overlay for Therapist Chat if no booking made yet */}
         {activeTab === 'therapist' && !isChatUnlocked ? (
-          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-slate-50">
+          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-slate-50/60">
             <div className="w-16 h-16 rounded-full bg-amber-100 text-amber-800 flex items-center justify-center mb-4 border border-amber-200">
               <Lock className="w-8 h-8" />
             </div>
             <h4 className="text-base font-bold text-slate-900 mb-1">
               Therapist Consultation Thread Locked
             </h4>
-            <p className="text-xs text-slate-600 max-w-sm mb-6">
+            <p className="text-xs text-slate-600 max-w-sm mb-6 font-medium">
               Direct consultation messaging with Dr. Sarah Jenkins unlocks automatically once your first session is booked.
             </p>
           </div>
         ) : (
           <>
             {/* Messages Container */}
-            <div className="flex-1 p-4 sm:p-6 overflow-y-auto space-y-4 bg-slate-50/50">
+            <div className="flex-1 p-4 sm:p-6 overflow-y-auto space-y-4 bg-slate-50/40">
               {/* If Crisis Triggered, show top Crisis Alert Banner */}
               {activeTab === 'ai' && lastCrisisTriggered && (
                 <CrisisResourceCard onDismiss={dismissCrisisAlert} isInline />
@@ -181,20 +177,20 @@ export const ChatView: React.FC = () => {
                               : 'https://images.unsplash.com/photo-1594824813566-78a9c3d4a4d6?w=100&auto=format&fit=crop&q=80'
                           }
                           alt="Avatar"
-                          className="w-7 h-7 rounded-full border border-emerald-600 object-cover shrink-0 mb-1"
+                          className="w-7 h-7 rounded-full border border-sky-500 object-cover shrink-0 mb-1"
                         />
                       )}
 
                       <div
                         className={`p-4 rounded-3xl text-xs leading-relaxed shadow-2xs ${
                           msg.is_prescription
-                            ? 'bg-white border-2 border-emerald-600 text-slate-900 rounded-bl-sm w-full sm:max-w-md'
+                            ? 'bg-white border-2 border-sky-500 text-slate-900 rounded-bl-sm w-full sm:max-w-md'
                             : msg.is_crisis
-                            ? 'bg-amber-50 border-2 border-amber-300 text-slate-900 rounded-bl-sm'
+                            ? 'bg-rose-50 border-2 border-rose-300 text-slate-900 rounded-bl-sm'
                             : isUser
-                            ? 'bg-emerald-700 text-white rounded-br-sm font-medium'
+                            ? 'blue-gradient-btn text-white rounded-br-sm font-medium'
                             : msg.is_ai
-                            ? 'bg-white border border-teal-200 text-slate-900 rounded-bl-sm'
+                            ? 'bg-white border border-slate-200 text-slate-900 rounded-bl-sm'
                             : 'bg-white border border-slate-200 text-slate-900 rounded-bl-sm'
                         }`}
                       >
@@ -205,21 +201,21 @@ export const ChatView: React.FC = () => {
                         {msg.is_prescription && msg.prescription_data ? (
                           <div className="space-y-3">
                             {/* Rx Header Badge */}
-                            <div className="bg-gradient-to-r from-emerald-900 to-teal-800 text-white p-3.5 rounded-2xl flex items-center justify-between border border-emerald-600">
+                            <div className="bg-gradient-to-r from-sky-700 to-indigo-800 text-white p-3.5 rounded-2xl flex items-center justify-between border border-sky-600">
                               <div className="flex items-center gap-2">
-                                <div className="p-1.5 bg-emerald-700/60 rounded-xl text-emerald-200">
+                                <div className="p-1.5 bg-sky-600/60 rounded-xl text-sky-100">
                                   <Pill className="w-4 h-4" />
                                 </div>
                                 <div>
                                   <h4 className="text-xs font-extrabold tracking-wide uppercase">
                                     Official Medical Prescription
                                   </h4>
-                                  <span className="text-[10px] text-emerald-200 font-semibold block">
+                                  <span className="text-[10px] text-sky-100 font-semibold block">
                                     Rx #: {msg.prescription_data.rx_number}
                                   </span>
                                 </div>
                               </div>
-                              <span className="text-[10px] bg-emerald-400/20 text-emerald-100 font-bold px-2 py-0.5 rounded-full border border-emerald-400/30">
+                              <span className="text-[10px] bg-white/20 text-white font-bold px-2 py-0.5 rounded-full border border-white/30">
                                 Verified
                               </span>
                             </div>
@@ -236,18 +232,18 @@ export const ChatView: React.FC = () => {
                               </div>
                             </div>
 
-                            {/* Clinical Diagnosis */}
-                            <div className="text-[11px] bg-emerald-50/60 p-2.5 rounded-xl border border-emerald-100">
-                              <span className="text-emerald-900 font-bold block text-[10px] mb-0.5">
+                            {/* Clinical Impression */}
+                            <div className="text-[11px] bg-sky-50/80 p-2.5 rounded-xl border border-sky-100">
+                              <span className="text-sky-900 font-bold block text-[10px] mb-0.5">
                                 Clinical Impression / Diagnosis:
                               </span>
-                              <p className="text-emerald-950 font-medium">{msg.prescription_data.diagnosis}</p>
+                              <p className="text-sky-950 font-medium">{msg.prescription_data.diagnosis}</p>
                             </div>
 
                             {/* Medications */}
                             <div className="space-y-2">
                               <span className="text-[11px] font-bold text-slate-900 flex items-center gap-1">
-                                <Stethoscope className="w-3.5 h-3.5 text-emerald-700" />
+                                <Stethoscope className="w-3.5 h-3.5 text-sky-600" />
                                 Prescribed Medications ({msg.prescription_data.medications.length})
                               </span>
 
@@ -258,11 +254,11 @@ export const ChatView: React.FC = () => {
                                 >
                                   <div className="flex items-center justify-between">
                                     <span className="font-bold text-xs text-slate-900">{med.medication_name}</span>
-                                    <span className="text-[10px] bg-teal-100 text-teal-900 font-bold px-2 py-0.5 rounded">
+                                    <span className="text-[10px] bg-cyan-100 text-cyan-900 font-bold px-2 py-0.5 rounded">
                                       {med.dosage}
                                     </span>
                                   </div>
-                                  <div className="flex items-center justify-between text-[11px] text-slate-600">
+                                  <div className="flex items-center justify-between text-[11px] text-slate-600 font-medium">
                                     <span>Frequency: {med.frequency}</span>
                                     <span>Duration: {med.duration}</span>
                                   </div>
@@ -278,8 +274,8 @@ export const ChatView: React.FC = () => {
                             {/* Signature & Actions */}
                             <div className="pt-2 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-2">
                               <div className="text-[10px] text-slate-600">
-                                <span className="font-bold text-emerald-900 block flex items-center gap-1">
-                                  <CheckCircle className="w-3 h-3 text-emerald-600" />
+                                <span className="font-bold text-sky-800 block flex items-center gap-1">
+                                  <CheckCircle className="w-3 h-3 text-sky-600" />
                                   Electronically Signed
                                 </span>
                                 <span>{msg.prescription_data.doctor_signature}</span>
@@ -287,7 +283,7 @@ export const ChatView: React.FC = () => {
 
                               <button
                                 onClick={() => alert(`Downloading official PDF copy of Prescription ${msg.prescription_data?.rx_number}...`)}
-                                className="w-full sm:w-auto px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-[11px] rounded-xl flex items-center justify-center gap-1 shadow-2xs transition-colors shrink-0"
+                                className="w-full sm:w-auto px-3 py-1.5 blue-gradient-btn text-white font-bold text-[11px] rounded-xl flex items-center justify-center gap-1 shadow-2xs shrink-0"
                               >
                                 <Download className="w-3 h-3" />
                                 Save PDF
@@ -299,13 +295,13 @@ export const ChatView: React.FC = () => {
                         )}
 
                         {msg.is_crisis && (
-                          <div className="mt-3 pt-3 border-t border-amber-200">
+                          <div className="mt-3 pt-3 border-t border-rose-200">
                             <CrisisResourceCard isInline />
                           </div>
                         )}
                       </div>
                     </div>
-                    <span className="text-[10px] text-slate-400 mt-1 px-1">
+                    <span className="text-[10px] text-slate-400 mt-1 px-1 font-medium">
                       {new Date(msg.created_at).toLocaleTimeString([], {
                         hour: '2-digit',
                         minute: '2-digit',
@@ -326,17 +322,17 @@ export const ChatView: React.FC = () => {
                 type="text"
                 placeholder={
                   activeTab === 'ai'
-                    ? 'Ask AI Guide for coping strategies or grounding exercises...'
+                    ? 'Ask AI Companion for coping strategies or grounding exercises...'
                     : 'Message Dr. Sarah Jenkins...'
                 }
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
-                className="flex-1 px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-medium text-slate-900 focus:bg-white focus:border-emerald-600 focus:outline-none"
+                className="flex-1 px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-medium text-slate-900 focus:bg-white focus:border-sky-500 focus:outline-none"
               />
 
               <button
                 type="submit"
-                className="px-5 py-3 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs rounded-2xl shadow-md transition-all flex items-center gap-1.5 shrink-0"
+                className="px-5 py-3 blue-gradient-btn text-white font-bold text-xs rounded-2xl shadow-md transition-all flex items-center gap-1.5 shrink-0"
               >
                 <span>Send</span>
                 <Send className="w-3.5 h-3.5" />

@@ -3,9 +3,8 @@
 import React from 'react';
 import { useApp } from '@/context/AppContext';
 import {
-  Flower2,
-  User,
   ShieldAlert,
+  Zap,
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -21,36 +20,29 @@ export const Navbar: React.FC<NavbarProps> = ({
   const unresolvedCrisisCount = crisisLogs.filter((l) => !l.resolved).length;
 
   return (
-    <header className="sticky top-0 z-40 w-full glass-header border-b border-emerald-900/10 shadow-2xs">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          {/* Logo & Branding */}
+    <div className="sticky top-4 z-40 px-4 sm:px-6 lg:px-8 pointer-events-none">
+      <header className="max-w-6xl mx-auto glass-dock rounded-3xl px-4 sm:px-6 shadow-xl border border-white/80 pointer-events-auto transition-all">
+        <div className="flex items-center justify-between h-16 sm:h-18">
+          {/* Top Left Corner: Large Borderless Logo Only */}
           <div
-            className="flex items-center gap-3 cursor-pointer group"
+            className="flex items-center cursor-pointer group py-1"
             onClick={() => setActiveTab(user.role === 'therapist' ? 'doctor_portal' : 'home')}
+            title="MindBloom"
           >
-            <div className="w-10 h-10 rounded-2xl bg-emerald-700 text-white flex items-center justify-center shadow-md group-hover:scale-105 transition-transform duration-200">
-              <Flower2 className="w-6 h-6 animate-pulse-subtle" />
-            </div>
-            <div>
-              <span className="text-xl font-bold tracking-tight text-emerald-950 flex items-center gap-1">
-                Mind<span className="text-emerald-700">Bloom</span>
-              </span>
-              <span className="text-[11px] text-emerald-800 font-semibold tracking-wide">
-                {user.role === 'therapist'
-                  ? 'Clinical Practice Console'
-                  : 'Psychologist Consultation & Care'}
-              </span>
-            </div>
+            <img
+              src="/logo.png"
+              alt="MindBloom Logo"
+              className="h-12 sm:h-14 w-auto object-contain group-hover:scale-105 transition-all duration-300"
+            />
           </div>
 
-          {/* Right Controls (Active Session Indicator + Urgent Alerts + Profile avatar) */}
+          {/* Right Controls */}
           <div className="flex items-center gap-3">
             {/* Urgent Crisis Notification Badge for Therapist */}
             {user.role === 'therapist' && unresolvedCrisisCount > 0 && (
               <button
                 onClick={() => setActiveTab('doctor_portal')}
-                className="bg-amber-500 text-slate-950 text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1.5 shadow-2xs animate-bounce"
+                className="bg-rose-500 text-white text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-xs animate-bounce"
                 title={`${unresolvedCrisisCount} Patient Crisis Alert`}
               >
                 <ShieldAlert className="w-3.5 h-3.5" />
@@ -62,34 +54,37 @@ export const Navbar: React.FC<NavbarProps> = ({
             {activeSession && (
               <button
                 onClick={() => setActiveTab('video_call')}
-                className="bg-emerald-600 text-white text-xs font-semibold px-3 py-1.5 rounded-full flex items-center gap-2 shadow-xs hover:bg-emerald-700 animate-pulse"
+                className="blue-gradient-btn text-white text-xs font-semibold px-3 py-1.5 rounded-full flex items-center gap-2 shadow-xs animate-pulse"
               >
-                <span className="w-2 h-2 rounded-full bg-white"></span>
-                Consultation Active
+                <Zap className="w-3.5 h-3.5 fill-white" />
+                Session Active
               </button>
             )}
 
-            {/* User Profile Avatar & Account Settings */}
-            <div className="flex items-center gap-2 pl-2 border-l border-emerald-900/10">
+            {/* User Profile Avatar & Role Switcher */}
+            <div className="flex items-center gap-2.5 pl-3 border-l border-slate-200">
               <button
                 onClick={openAuthModal}
-                className="flex items-center gap-2 hover:opacity-85 transition-opacity"
+                className="flex items-center gap-2.5 p-1 rounded-full hover:bg-slate-100/80 transition-all"
               >
                 <img
                   src={user.avatar_url}
                   alt={user.full_name}
-                  className="w-9 h-9 rounded-full border-2 border-emerald-600 object-cover shadow-2xs"
+                  className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border-2 border-sky-500 object-cover shadow-2xs"
                 />
                 <div className="text-left hidden sm:block">
                   <p className="text-xs font-bold text-slate-800 leading-tight">
                     {user.full_name}
+                  </p>
+                  <p className="text-[10px] text-sky-700 font-semibold capitalize">
+                    {user.role}
                   </p>
                 </div>
               </button>
             </div>
           </div>
         </div>
-      </div>
-    </header>
+      </header>
+    </div>
   );
 };

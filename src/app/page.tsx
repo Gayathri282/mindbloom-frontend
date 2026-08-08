@@ -38,7 +38,7 @@ function MindBloomApp() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#F7F9F8] text-slate-900 font-sans selection:bg-emerald-200 selection:text-emerald-900">
+    <div className="min-h-screen flex flex-col text-slate-900 font-sans selection:bg-emerald-200 selection:text-emerald-900">
       {/* Top Header Bar */}
       <Navbar
         setActiveTab={setActiveTab}

@@ -8,11 +8,8 @@ import {
   Play,
   Pause,
   Clock,
-  Volume2,
-  VolumeX,
-  CheckCircle2,
-  Heart,
   Headphones,
+  Volume2,
 } from 'lucide-react';
 
 export const MindfulnessView: React.FC = () => {
@@ -23,7 +20,6 @@ export const MindfulnessView: React.FC = () => {
     mindfulnessPrograms[0]
   );
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
-  const [isMuted, setIsMuted] = useState<boolean>(false);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -53,23 +49,30 @@ export const MindfulnessView: React.FC = () => {
   };
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6 pb-12">
-      {/* Header */}
-      <div className="bg-white rounded-3xl p-6 sm:p-8 border border-emerald-100 shadow-sm relative overflow-hidden">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+    <div className="max-w-6xl mx-auto space-y-6 pb-16">
+      {/* Top Scenery Banner with High Quality Photography */}
+      <div className="relative rounded-3xl overflow-hidden shadow-xl border border-emerald-200 bg-slate-900 text-white min-h-[200px] flex items-center p-6 sm:p-8">
+        <img
+          src="https://images.unsplash.com/photo-1518241353330-0f7941c2d9b5?w=1400&auto=format&fit=crop&q=80"
+          alt="Serene Nature Scenery"
+          className="absolute inset-0 w-full h-full object-cover opacity-40"
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-emerald-950 via-teal-950/80 to-transparent"></div>
+
+        <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between w-full gap-4">
           <div>
-            <span className="px-3 py-1 bg-emerald-100 text-emerald-900 text-xs font-bold rounded-full inline-block mb-2">
-              Clinical Wellness Media Library
+            <span className="px-3 py-1 bg-emerald-500/30 text-emerald-200 text-xs font-bold rounded-full inline-block mb-2 border border-emerald-400/30 backdrop-blur-md">
+              Clinical Wellness Audio Library
             </span>
-            <h2 className="text-2xl font-bold text-slate-900">
-              Mindfulness & Self-Care Sessions
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-white">
+              Mindfulness & Guided Meditation
             </h2>
-            <p className="text-xs text-slate-600 mt-1 max-w-xl">
-              Curated audio meditations, body scans, and breathing exercises crafted to reduce nervous system arousal and foster peaceful sleep.
+            <p className="text-xs sm:text-sm text-emerald-100 mt-1 max-w-xl font-medium">
+              Curated audio sessions, body scans, and breathing exercises to calm nervous system arousal.
             </p>
           </div>
-          <div className="w-12 h-12 rounded-2xl bg-emerald-700 text-white flex items-center justify-center shrink-0 shadow-md">
-            <Headphones className="w-6 h-6" />
+          <div className="w-14 h-14 rounded-2xl emerald-gradient-btn text-white flex items-center justify-center shrink-0 shadow-lg">
+            <Headphones className="w-7 h-7" />
           </div>
         </div>
       </div>
@@ -80,9 +83,9 @@ export const MindfulnessView: React.FC = () => {
           <button
             key={cat}
             onClick={() => setSelectedCategory(cat)}
-            className={`px-4 py-2 rounded-2xl text-xs font-bold transition-all shrink-0 ${
+            className={`px-4 py-2.5 rounded-2xl text-xs font-bold transition-all shrink-0 ${
               selectedCategory === cat
-                ? 'bg-emerald-700 text-white shadow-xs'
+                ? 'emerald-gradient-btn text-white shadow-xs'
                 : 'bg-white text-slate-700 border border-slate-200 hover:border-emerald-300'
             }`}
           >
@@ -91,52 +94,53 @@ export const MindfulnessView: React.FC = () => {
         ))}
       </div>
 
-      {/* Main Active Media Player Card */}
+      {/* Main Active Media Player Card with High Res Image */}
       {activeProgram && (
-        <div className="bg-slate-900 text-white rounded-3xl p-6 sm:p-8 shadow-xl relative overflow-hidden border border-slate-800">
-          <div className="flex flex-col md:flex-row items-center gap-6">
+        <div className="relative bg-gradient-to-br from-emerald-950 via-teal-900 to-slate-900 text-white rounded-3xl p-6 sm:p-8 shadow-xl overflow-hidden border border-white/10">
+          <div className="absolute inset-0 pattern-dots opacity-15 pointer-events-none"></div>
+
+          <div className="relative z-10 flex flex-col md:flex-row items-center gap-6">
             <img
               src={activeProgram.thumbnail_url}
               alt={activeProgram.title}
-              className="w-32 h-32 sm:w-44 sm:h-44 rounded-2xl object-cover shadow-lg border border-white/10 shrink-0"
+              className="w-36 h-36 sm:w-48 sm:h-48 rounded-2xl object-cover shadow-2xl border-2 border-white/20 shrink-0"
             />
 
             <div className="flex-1 space-y-3 text-center md:text-left">
-              <div className="inline-flex items-center gap-2 px-3 py-0.5 bg-emerald-500/20 text-emerald-300 text-[11px] font-bold rounded-full border border-emerald-500/30">
-                <Sparkles className="w-3 h-3" />
+              <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/15 text-emerald-200 text-[11px] font-bold rounded-full border border-white/20 backdrop-blur-md">
+                <Sparkles className="w-3.5 h-3.5 text-amber-300" />
                 {activeProgram.category} • {activeProgram.instructor}
               </div>
 
-              <h3 className="text-xl sm:text-2xl font-bold">{activeProgram.title}</h3>
-              <p className="text-xs text-slate-300 max-w-lg leading-relaxed">
+              <h3 className="text-xl sm:text-2xl font-extrabold">{activeProgram.title}</h3>
+              <p className="text-xs sm:text-sm text-slate-200 max-w-lg leading-relaxed font-medium">
                 {activeProgram.description}
               </p>
 
               <div className="flex items-center justify-center md:justify-start gap-4 pt-2">
                 <button
                   onClick={() => handlePlayProgram(activeProgram)}
-                  className="px-6 py-3 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs rounded-2xl shadow-md flex items-center gap-2 transition-all transform active:scale-95"
+                  className="px-6 py-3.5 bg-white text-emerald-950 hover:bg-emerald-50 font-bold text-xs rounded-2xl shadow-lg flex items-center gap-2 transition-all transform active:scale-95"
                 >
                   {isPlaying ? (
                     <>
-                      <Pause className="w-4 h-4 fill-slate-950" /> Pause Session
+                      <Pause className="w-4 h-4 fill-emerald-950" /> Pause Session
                     </>
                   ) : (
                     <>
-                      <Play className="w-4 h-4 fill-slate-950" /> Start Guided Audio
+                      <Play className="w-4 h-4 fill-emerald-950" /> Play Guided Audio
                     </>
                   )}
                 </button>
 
-                <div className="flex items-center gap-2 text-xs text-slate-400 font-semibold">
-                  <Clock className="w-4 h-4 text-emerald-400" />
+                <div className="flex items-center gap-2 text-xs text-emerald-200 font-bold bg-white/10 px-3.5 py-2 rounded-xl border border-white/10">
+                  <Clock className="w-4 h-4 text-emerald-300" />
                   {activeProgram.duration_minutes} Minutes
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Hidden audio element */}
           <audio
             ref={audioRef}
             src={activeProgram.media_url}
@@ -145,7 +149,7 @@ export const MindfulnessView: React.FC = () => {
         </div>
       )}
 
-      {/* Program Grid */}
+      {/* Program Grid with High Res Photography */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredPrograms.map((prog) => {
           const isSelected = activeProgram?.id === prog.id;
@@ -153,41 +157,47 @@ export const MindfulnessView: React.FC = () => {
             <div
               key={prog.id}
               onClick={() => handlePlayProgram(prog)}
-              className={`bg-white rounded-3xl p-5 border transition-all cursor-pointer shadow-2xs hover:shadow-md flex flex-col justify-between ${
-                isSelected ? 'border-emerald-600 ring-2 ring-emerald-600/30' : 'border-slate-200 hover:border-emerald-300'
+              className={`refreshing-card p-5 cursor-pointer flex flex-col justify-between ${
+                isSelected ? 'border-emerald-500 ring-2 ring-emerald-500/30' : ''
               }`}
             >
               <div>
-                <div className="relative mb-3 rounded-2xl overflow-hidden aspect-video">
+                <div className="relative mb-3 rounded-2xl overflow-hidden aspect-video shadow-xs">
                   <img
                     src={prog.thumbnail_url}
                     alt={prog.title}
                     className="w-full h-full object-cover"
                   />
-                  <div className="absolute inset-0 bg-slate-900/30 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-                    <div className="w-10 h-10 rounded-full bg-white/90 text-emerald-800 flex items-center justify-center shadow-md">
+                  <div className="absolute inset-0 bg-slate-950/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                    <div className="w-11 h-11 rounded-full bg-white text-emerald-800 flex items-center justify-center shadow-lg transform hover:scale-105 transition-transform">
                       <Play className="w-5 h-5 fill-emerald-800 ml-0.5" />
                     </div>
                   </div>
-                  <span className="absolute bottom-2 right-2 px-2 py-0.5 bg-slate-900/80 backdrop-blur-md text-white text-[10px] font-bold rounded-md">
+                  <span className="absolute bottom-2 right-2 px-2 py-0.5 bg-slate-900/80 backdrop-blur-md text-white text-[10px] font-bold rounded-md border border-white/20">
                     {prog.duration_minutes}m
                   </span>
                 </div>
 
-                <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md inline-block mb-1.5">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded-md inline-block mb-1.5 border border-emerald-200">
                   {prog.category}
                 </span>
 
                 <h4 className="text-sm font-bold text-slate-900 mb-1">{prog.title}</h4>
-                <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed mb-3">
+                <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed mb-3 font-medium">
                   {prog.description}
                 </p>
               </div>
 
               <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-semibold text-slate-600">
-                <span>{prog.instructor}</span>
-                <span className="text-emerald-700 font-bold hover:underline">
-                  {isSelected && isPlaying ? 'Playing ♪' : 'Listen Now →'}
+                <span className="text-slate-700">{prog.instructor}</span>
+                <span className="text-emerald-600 font-bold flex items-center gap-1 hover:underline">
+                  {isSelected && isPlaying ? (
+                    <>
+                      <Volume2 className="w-3.5 h-3.5 text-emerald-600 animate-pulse" /> Playing ♪
+                    </>
+                  ) : (
+                    'Listen Now →'
+                  )}
                 </span>
               </div>
             </div>

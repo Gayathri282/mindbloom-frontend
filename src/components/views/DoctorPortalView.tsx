@@ -14,16 +14,13 @@ import {
   Trash2,
   Save,
   Eye,
-  CheckCircle,
-  AlertTriangle,
-  BookOpen,
-  Search,
-  ChevronRight,
-  Sparkles,
-  Lock,
   Bell,
   Stethoscope,
   Pill,
+  Lock,
+  Star,
+  Activity,
+  Award,
 } from 'lucide-react';
 
 interface DoctorPortalViewProps {
@@ -58,20 +55,16 @@ export const DoctorPortalView: React.FC<DoctorPortalViewProps> = ({ setActiveTab
   const [selectedPatientId, setSelectedPatientId] = useState<string>('patient-1');
   const [docPreviewUrl, setDocPreviewUrl] = useState<string | null>(null);
 
-  // Doctor session note editing state
   const upcomingAppt = appointments.find((a) => a.status === 'scheduled' || a.status === 'in_progress') || appointments[0];
   const [currentNotes, setCurrentNotes] = useState<string>(
     sessionNotes[upcomingAppt?.id || ''] || ''
   );
 
-  // Doctor availability slot form
   const [newDay, setNewDay] = useState('Tomorrow');
   const [newTime, setNewTime] = useState('2:00 PM - 2:50 PM');
 
-  // Direct therapist message state
   const [replyText, setReplyText] = useState('');
 
-  // Doctor care plan builder state
   const [carePlanTitle, setCarePlanTitle] = useState(carePlan.title);
   const [carePlanSummary, setCarePlanSummary] = useState(carePlan.summary);
 
@@ -104,113 +97,118 @@ export const DoctorPortalView: React.FC<DoctorPortalViewProps> = ({ setActiveTab
     alert('Care Plan published successfully! It will now override the patient starter intake plan.');
   };
 
-  // Urgent crisis alerts count
   const unresolvedCrisisCount = crisisLogs.filter((l) => !l.resolved).length;
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6 pb-12">
-      {/* Top Clinical Header Banner */}
-      <div className="bg-gradient-to-r from-emerald-900 via-emerald-800 to-slate-900 text-white rounded-3xl p-6 sm:p-8 shadow-xl relative overflow-hidden border border-emerald-700/40">
+    <div className="max-w-7xl mx-auto space-y-6 pb-16">
+      {/* Top Clinical Header Banner with Doctor Portrait & Background Pattern */}
+      <div className="relative bg-gradient-to-r from-emerald-950 via-teal-900 to-slate-900 text-white rounded-3xl p-6 sm:p-8 shadow-xl overflow-hidden border border-white/10">
+        <div className="absolute inset-0 pattern-dots opacity-20 pointer-events-none"></div>
+
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative z-10">
-          <div className="flex items-center gap-4">
-            <img
-              src={user.avatar_url || 'https://images.unsplash.com/photo-1594824813566-78a9c3d4a4d6?w=250&auto=format&fit=crop&q=80'}
-              alt={user.full_name}
-              className="w-16 h-16 rounded-2xl border-2 border-emerald-400 object-cover shadow-md shrink-0"
-            />
+          <div className="flex items-center gap-5">
+            <div className="relative shrink-0">
+              <img
+                src={user.avatar_url || 'https://images.unsplash.com/photo-1594824813566-78a9c3d4a4d6?w=250&auto=format&fit=crop&q=80'}
+                alt={user.full_name}
+                className="w-18 h-18 sm:w-20 sm:h-20 rounded-2xl border-2 border-emerald-400 object-cover shadow-lg"
+              />
+              <span className="absolute -bottom-1 -right-1 bg-emerald-500 text-white p-1 rounded-full text-xs shadow">
+                ✓
+              </span>
+            </div>
             <div>
               <div className="flex items-center gap-2 mb-1">
-                <span className="px-2.5 py-0.5 bg-emerald-400/20 text-emerald-200 text-[11px] font-bold rounded-full border border-emerald-400/30 flex items-center gap-1">
+                <span className="px-2.5 py-0.5 bg-emerald-500/20 text-emerald-200 text-[11px] font-bold rounded-full border border-emerald-400/30 flex items-center gap-1">
                   <Stethoscope className="w-3 h-3 text-emerald-300" />
                   Clinical Practitioner Console
                 </span>
                 {unresolvedCrisisCount > 0 && (
-                  <span className="px-2.5 py-0.5 bg-amber-500/20 text-amber-200 text-[11px] font-bold rounded-full border border-amber-400/30 flex items-center gap-1 animate-pulse">
-                    <ShieldAlert className="w-3 h-3 text-amber-300" />
-                    {unresolvedCrisisCount} Urgent Crisis Alerts
+                  <span className="px-2.5 py-0.5 bg-rose-500/30 text-rose-100 text-[11px] font-bold rounded-full border border-rose-400/40 flex items-center gap-1 animate-bounce">
+                    <ShieldAlert className="w-3 h-3 text-rose-300" />
+                    {unresolvedCrisisCount} Crisis Alert
                   </span>
                 )}
               </div>
-              <h2 className="text-2xl font-bold">{user.full_name}</h2>
+              <h2 className="text-2xl font-extrabold">{user.full_name}</h2>
               <p className="text-xs text-emerald-100 font-medium">
-                Licensed Clinical Psychologist • Cognitive Behavioral Therapy (CBT) Practice
+                Licensed Clinical Psychologist • Cognitive Behavioral Therapy Practice
               </p>
             </div>
           </div>
 
           {/* Practitioner Sub-Navigation Tabs */}
-          <div className="flex flex-wrap bg-slate-900/80 p-1.5 rounded-2xl border border-white/10 gap-1">
+          <div className="flex flex-wrap bg-white/10 backdrop-blur-md p-1.5 rounded-2xl border border-white/20 gap-1">
             <button
               onClick={() => setActiveDoctorTab('schedule')}
               className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
                 activeDoctorTab === 'schedule'
-                  ? 'bg-emerald-600 text-white shadow-xs'
-                  : 'text-slate-300 hover:text-white'
+                  ? 'bg-white text-emerald-950 shadow-md'
+                  : 'text-white/80 hover:text-white'
               }`}
             >
-              <Calendar className="w-3.5 h-3.5" /> Consultations
+              <Calendar className="w-3.5 h-3.5 text-emerald-700" /> Consultations
             </button>
 
             <button
               onClick={() => setActiveDoctorTab('patients')}
               className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
                 activeDoctorTab === 'patients'
-                  ? 'bg-emerald-600 text-white shadow-xs'
-                  : 'text-slate-300 hover:text-white'
+                  ? 'bg-white text-emerald-950 shadow-md'
+                  : 'text-white/80 hover:text-white'
               }`}
             >
-              <User className="w-3.5 h-3.5" /> Patient Caseload
+              <User className="w-3.5 h-3.5 text-emerald-700" /> Patient Caseload
             </button>
 
             <button
               onClick={() => setActiveDoctorTab('slots')}
               className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
                 activeDoctorTab === 'slots'
-                  ? 'bg-emerald-600 text-white shadow-xs'
-                  : 'text-slate-300 hover:text-white'
+                  ? 'bg-white text-emerald-950 shadow-md'
+                  : 'text-white/80 hover:text-white'
               }`}
             >
-              <Clock className="w-3.5 h-3.5" /> Manage Slots
+              <Clock className="w-3.5 h-3.5 text-emerald-700" /> Manage Slots
             </button>
 
             <button
               onClick={() => setActiveDoctorTab('messages')}
               className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
                 activeDoctorTab === 'messages'
-                  ? 'bg-emerald-600 text-white shadow-xs'
-                  : 'text-slate-300 hover:text-white'
+                  ? 'bg-white text-emerald-950 shadow-md'
+                  : 'text-white/80 hover:text-white'
               }`}
             >
-              <MessageSquare className="w-3.5 h-3.5" /> Inbox & Safety
+              <MessageSquare className="w-3.5 h-3.5 text-emerald-700" /> Inbox & Safety
             </button>
 
             <button
               onClick={() => setActiveDoctorTab('careplans')}
               className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
                 activeDoctorTab === 'careplans'
-                  ? 'bg-emerald-600 text-white shadow-xs'
-                  : 'text-slate-300 hover:text-white'
+                  ? 'bg-white text-emerald-950 shadow-md'
+                  : 'text-white/80 hover:text-white'
               }`}
             >
-              <FileText className="w-3.5 h-3.5" /> Care Plan Studio
+              <FileText className="w-3.5 h-3.5 text-emerald-700" /> Care Plan Studio
             </button>
           </div>
         </div>
       </div>
 
-      {/* Tab 1: Doctor Consultations Schedule & Live Launcher */}
+      {/* Tab 1: Doctor Consultations Schedule */}
       {activeDoctorTab === 'schedule' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Main Column: Active & Upcoming Consultations */}
           <div className="lg:col-span-2 space-y-6">
-            <div className="bg-white rounded-3xl p-6 border border-emerald-100 shadow-sm">
+            <div className="refreshing-card p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                  <Video className="w-5 h-5 text-emerald-700" />
+                  <Video className="w-5 h-5 text-emerald-600" />
                   Today's Clinical Consultations
                 </h3>
-                <span className="text-xs font-semibold text-emerald-800 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
-                  Doctor-Initiated Call Flow
+                <span className="text-xs font-bold text-emerald-800 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
+                  Doctor-Initiated Call Launcher
                 </span>
               </div>
 
@@ -218,17 +216,17 @@ export const DoctorPortalView: React.FC<DoctorPortalViewProps> = ({ setActiveTab
                 {appointments.map((appt) => (
                   <div
                     key={appt.id}
-                    className="p-5 bg-slate-50 border border-slate-200/80 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                    className="p-5 bg-gradient-to-br from-slate-50 to-emerald-50/40 border border-slate-200/80 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4"
                   >
                     <div className="flex items-center gap-4">
                       <img
                         src={appt.patient_avatar || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80'}
                         alt={appt.patient_name}
-                        className="w-12 h-12 rounded-2xl border-2 border-emerald-600 object-cover shadow-2xs"
+                        className="w-14 h-14 rounded-2xl border-2 border-emerald-500 object-cover shadow-sm"
                       />
                       <div>
                         <div className="flex items-center gap-2">
-                          <h4 className="text-sm font-bold text-slate-900">{appt.patient_name}</h4>
+                          <h4 className="text-sm font-extrabold text-slate-900">{appt.patient_name}</h4>
                           <span
                             className={`px-2 py-0.5 text-[10px] font-bold rounded-full ${
                               appt.status === 'completed'
@@ -242,10 +240,10 @@ export const DoctorPortalView: React.FC<DoctorPortalViewProps> = ({ setActiveTab
                           </span>
                         </div>
                         <p className="text-xs text-slate-600 mt-0.5 font-medium">
-                          Intake: {appt.notes || 'Mindful stress reduction & anxiety management'}
+                          Intake Focus: CBT for Panic & Anxiety
                         </p>
-                        <span className="text-[11px] text-emerald-800 font-semibold mt-1 block">
-                          Scheduled: Today at 2:00 PM (50 mins)
+                        <span className="text-[11px] text-emerald-700 font-semibold mt-1 block">
+                          Scheduled Today at 2:00 PM (50 mins)
                         </span>
                       </div>
                     </div>
@@ -256,16 +254,16 @@ export const DoctorPortalView: React.FC<DoctorPortalViewProps> = ({ setActiveTab
                           startDoctorCall(appt.id);
                           setActiveTab('video_call');
                         }}
-                        className="px-4 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2"
+                        className="px-4 py-2.5 emerald-gradient-btn text-white font-bold text-xs rounded-xl flex items-center justify-center gap-2"
                       >
                         <Video className="w-4 h-4" /> Start Video Session
                       </button>
 
                       <button
                         onClick={notifyPatientAgain}
-                        className="px-4 py-1.5 bg-teal-50 hover:bg-teal-100 text-teal-900 border border-teal-200 font-semibold text-xs rounded-xl flex items-center justify-center gap-1.5"
+                        className="px-4 py-1.5 bg-sky-50 hover:bg-sky-100 text-sky-900 border border-sky-200 font-bold text-xs rounded-xl flex items-center justify-center gap-1.5"
                       >
-                        <Bell className="w-3.5 h-3.5 text-teal-700" /> Ring Patient Again
+                        <Bell className="w-3.5 h-3.5 text-sky-600" /> Ring Patient Again
                       </button>
 
                       <button
@@ -297,7 +295,7 @@ export const DoctorPortalView: React.FC<DoctorPortalViewProps> = ({ setActiveTab
                         }}
                         className="px-4 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold text-xs rounded-xl flex items-center justify-center gap-1.5"
                       >
-                        <Pill className="w-3.5 h-3.5 text-emerald-700" /> Send Rx to Patient Chat
+                        <Pill className="w-3.5 h-3.5 text-emerald-600" /> Send Rx to Patient Chat
                       </button>
                     </div>
                   </div>
@@ -306,17 +304,16 @@ export const DoctorPortalView: React.FC<DoctorPortalViewProps> = ({ setActiveTab
             </div>
           </div>
 
-          {/* Right Column: Quick Clinical Notes */}
           <div className="space-y-6">
-            <div className="bg-white rounded-3xl p-6 border border-emerald-100 shadow-sm space-y-4">
+            <div className="refreshing-card p-6 space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                  <Lock className="w-4 h-4 text-emerald-700" />
+                  <Lock className="w-4 h-4 text-emerald-600" />
                   Private Clinical Notes
                 </h3>
                 <button
                   onClick={handleSaveNotes}
-                  className="px-3 py-1 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-lg flex items-center gap-1 shadow-2xs"
+                  className="px-3 py-1 emerald-gradient-btn text-white text-xs font-bold rounded-lg flex items-center gap-1 shadow-2xs"
                 >
                   <Save className="w-3.5 h-3.5" /> Save
                 </button>
@@ -327,45 +324,44 @@ export const DoctorPortalView: React.FC<DoctorPortalViewProps> = ({ setActiveTab
                 placeholder="Record therapist notes, observations, or CBT assignments for Maya Lin..."
                 value={currentNotes}
                 onChange={(e) => setCurrentNotes(e.target.value)}
-                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-medium text-slate-900 focus:bg-white focus:border-emerald-600 focus:outline-none"
+                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-medium text-slate-900 focus:bg-white focus:border-emerald-500 focus:outline-none"
               />
               <p className="text-[10px] text-slate-500">
-                Encrypted in Supabase. Confidential to attending psychologist only.
+                Encrypted storage. Confidential to attending psychologist only.
               </p>
             </div>
           </div>
         </div>
       )}
 
-      {/* Tab 2: Patient Caseload & Document Vault */}
+      {/* Tab 2: Patient Caseload */}
       {activeDoctorTab === 'patients' && (
-        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-emerald-100 shadow-sm space-y-6">
+        <div className="refreshing-card p-6 sm:p-8 space-y-6">
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                <User className="w-5 h-5 text-emerald-700" />
+                <User className="w-5 h-5 text-emerald-600" />
                 Active Patient Caseload & Medical Documents
               </h3>
-              <p className="text-xs text-slate-500 mt-0.5">
+              <p className="text-xs text-slate-500 mt-0.5 font-medium">
                 Review intake reports, referral letters, and patient history.
               </p>
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Left: Patient List */}
             <div className="space-y-3">
               <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
                 Assigned Patients (1)
               </span>
               <div
                 onClick={() => setSelectedPatientId('patient-1')}
-                className="p-4 bg-emerald-50 border-2 border-emerald-600 rounded-2xl cursor-pointer flex items-center gap-3 shadow-2xs"
+                className="p-4 bg-gradient-to-br from-emerald-50 to-teal-50 border-2 border-emerald-500 rounded-2xl cursor-pointer flex items-center gap-3 shadow-2xs"
               >
                 <img
                   src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80"
                   alt="Maya Lin"
-                  className="w-12 h-12 rounded-2xl border-2 border-emerald-600 object-cover"
+                  className="w-12 h-12 rounded-2xl border-2 border-emerald-500 object-cover shadow-2xs"
                 />
                 <div>
                   <h4 className="text-sm font-bold text-slate-900">Maya Lin</h4>
@@ -377,20 +373,19 @@ export const DoctorPortalView: React.FC<DoctorPortalViewProps> = ({ setActiveTab
               </div>
             </div>
 
-            {/* Right: Patient Document Vault */}
             <div className="md:col-span-2 space-y-4">
               <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                Uploaded Patient Records & Intake Forms ({patientDocuments.length})
+                Uploaded Patient Records ({patientDocuments.length})
               </span>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {patientDocuments.map((doc) => (
                   <div
                     key={doc.id}
-                    className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-2"
+                    className="p-4 bg-slate-50/80 border border-slate-200 rounded-2xl space-y-2"
                   >
                     <div className="flex items-center justify-between">
-                      <FileText className="w-5 h-5 text-emerald-700" />
+                      <FileText className="w-5 h-5 text-emerald-600" />
                       <span className="text-[10px] bg-slate-200 text-slate-700 font-bold px-2 py-0.5 rounded">
                         {doc.file_size}
                       </span>
@@ -409,17 +404,17 @@ export const DoctorPortalView: React.FC<DoctorPortalViewProps> = ({ setActiveTab
                       onClick={() => setDocPreviewUrl(doc.signed_url)}
                       className="w-full py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 font-bold text-xs rounded-xl border border-emerald-200 flex items-center justify-center gap-1.5 transition-colors"
                     >
-                      <Eye className="w-3.5 h-3.5" /> View Document via Signed URL
+                      <Eye className="w-3.5 h-3.5 text-emerald-600" /> View Document Signed URL
                     </button>
                   </div>
                 ))}
               </div>
 
               {docPreviewUrl && (
-                <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl">
+                <div className="p-4 bg-emerald-50/90 border border-emerald-200 rounded-2xl">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-xs font-bold text-emerald-950">
-                      Authenticated Document Preview (Signed URL)
+                      Authenticated Document Preview
                     </span>
                     <button
                       onClick={() => setDocPreviewUrl(null)}
@@ -442,28 +437,27 @@ export const DoctorPortalView: React.FC<DoctorPortalViewProps> = ({ setActiveTab
 
       {/* Tab 3: Availability Slot Management */}
       {activeDoctorTab === 'slots' && (
-        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-emerald-100 shadow-sm space-y-6">
+        <div className="refreshing-card p-6 sm:p-8 space-y-6">
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                <Clock className="w-5 h-5 text-emerald-700" />
+                <Clock className="w-5 h-5 text-emerald-600" />
                 Manage Therapist Consultation Slots
               </h3>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Add open consultation availability or remove unbooked slots. Booked slots are locked for patient care integrity.
+              <p className="text-xs text-slate-500 mt-0.5 font-medium">
+                Add open consultation availability or remove unbooked slots.
               </p>
             </div>
           </div>
 
-          {/* Form */}
-          <form onSubmit={handleAddSlot} className="p-4 bg-emerald-900 text-white rounded-2xl flex flex-wrap items-center gap-3">
+          <form onSubmit={handleAddSlot} className="p-4 bg-gradient-to-r from-emerald-900 via-teal-900 to-slate-900 text-white rounded-2xl flex flex-wrap items-center gap-3 shadow-md">
             <input
               type="text"
               required
-              placeholder="Day (e.g. Tomorrow, Mon Aug 10)"
+              placeholder="Day (e.g. Tomorrow)"
               value={newDay}
               onChange={(e) => setNewDay(e.target.value)}
-              className="px-3.5 py-2 bg-emerald-950/80 border border-emerald-700 rounded-xl text-xs text-white focus:outline-none"
+              className="px-3.5 py-2 bg-white/10 border border-white/20 text-white placeholder-white/60 rounded-xl text-xs focus:outline-none"
             />
             <input
               type="text"
@@ -471,22 +465,21 @@ export const DoctorPortalView: React.FC<DoctorPortalViewProps> = ({ setActiveTab
               placeholder="Time (e.g. 3:00 PM - 3:50 PM)"
               value={newTime}
               onChange={(e) => setNewTime(e.target.value)}
-              className="px-3.5 py-2 bg-emerald-950/80 border border-emerald-700 rounded-xl text-xs text-white focus:outline-none"
+              className="px-3.5 py-2 bg-white/10 border border-white/20 text-white placeholder-white/60 rounded-xl text-xs focus:outline-none"
             />
             <button
               type="submit"
-              className="px-4 py-2 bg-emerald-400 hover:bg-emerald-300 text-emerald-950 font-bold text-xs rounded-xl shadow-xs flex items-center gap-1.5 transition-all"
+              className="px-4 py-2 bg-white text-emerald-950 font-bold text-xs rounded-xl shadow-xs flex items-center gap-1.5 transition-all hover:bg-emerald-50"
             >
-              <Plus className="w-4 h-4" /> Publish Available Slot
+              <Plus className="w-4 h-4 text-emerald-700" /> Publish Available Slot
             </button>
           </form>
 
-          {/* Slots list */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {slots.map((slot) => (
               <div
                 key={slot.id}
-                className="p-4 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-between"
+                className="p-4 bg-slate-50/80 border border-slate-200 rounded-2xl flex items-center justify-between"
               >
                 <div>
                   <span className="text-xs font-bold text-slate-900 block">{slot.day_label}</span>
@@ -508,7 +501,7 @@ export const DoctorPortalView: React.FC<DoctorPortalViewProps> = ({ setActiveTab
                   className={`p-2 rounded-xl transition-colors ${
                     slot.is_booked
                       ? 'text-slate-300 cursor-not-allowed'
-                      : 'text-red-600 hover:bg-red-50'
+                      : 'text-rose-600 hover:bg-rose-50'
                   }`}
                   title={slot.is_booked ? 'Cannot remove booked slot' : 'Remove slot'}
                 >
@@ -520,16 +513,15 @@ export const DoctorPortalView: React.FC<DoctorPortalViewProps> = ({ setActiveTab
         </div>
       )}
 
-      {/* Tab 4: Messages & Urgent Safety Alerts */}
+      {/* Tab 4: Messages & Safety Alerts */}
       {activeDoctorTab === 'messages' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Urgent Crisis Alerts Log */}
-          <div className="bg-white rounded-3xl p-6 border border-emerald-100 shadow-sm space-y-4">
+          <div className="refreshing-card p-6 space-y-4">
             <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
               <ShieldAlert className="w-5 h-5 text-amber-600" />
               Patient Crisis Safety Alerts ({crisisLogs.length})
             </h3>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-slate-500 font-medium">
               Surfaced when AI assistant detects high emotional distress intent.
             </p>
 
@@ -540,7 +532,7 @@ export const DoctorPortalView: React.FC<DoctorPortalViewProps> = ({ setActiveTab
                   className={`p-4 rounded-2xl border text-xs space-y-2 ${
                     log.resolved
                       ? 'bg-slate-50 border-slate-200'
-                      : 'bg-amber-50 border-amber-300'
+                      : 'bg-amber-50/90 border-amber-300'
                   }`}
                 >
                   <div className="flex items-center justify-between">
@@ -550,8 +542,8 @@ export const DoctorPortalView: React.FC<DoctorPortalViewProps> = ({ setActiveTab
                     </span>
                   </div>
 
-                  <p className="text-[11px] text-slate-500">
-                    Flagged {new Date(log.created_at).toLocaleString()}
+                  <p className="text-[11px] text-slate-500 font-medium">
+                    Flagged at {new Date(log.created_at).toLocaleString()}
                   </p>
 
                   {!log.resolved && (
@@ -559,7 +551,7 @@ export const DoctorPortalView: React.FC<DoctorPortalViewProps> = ({ setActiveTab
                       onClick={() => resolveCrisisLog(log.id)}
                       className="w-full py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-lg"
                     >
-                      Mark Clinical Follow-up Complete
+                      Mark Follow-up Complete
                     </button>
                   )}
                 </div>
@@ -567,14 +559,13 @@ export const DoctorPortalView: React.FC<DoctorPortalViewProps> = ({ setActiveTab
             </div>
           </div>
 
-          {/* Consultation Inbox */}
-          <div className="lg:col-span-2 bg-white rounded-3xl p-6 border border-emerald-100 shadow-sm space-y-4">
+          <div className="lg:col-span-2 refreshing-card p-6 space-y-4">
             <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-              <MessageSquare className="w-5 h-5 text-emerald-700" />
+              <MessageSquare className="w-5 h-5 text-emerald-600" />
               Patient Consultation Thread (Maya Lin)
             </h3>
 
-            <div className="h-80 overflow-y-auto p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
+            <div className="h-80 overflow-y-auto p-4 bg-slate-50/70 border border-slate-200 rounded-2xl space-y-3">
               {therapistMessages.map((msg) => (
                 <div
                   key={msg.id}
@@ -585,8 +576,8 @@ export const DoctorPortalView: React.FC<DoctorPortalViewProps> = ({ setActiveTab
                   <div
                     className={`p-3 rounded-2xl text-xs max-w-[80%] ${
                       msg.sender_id === user.id
-                        ? 'bg-emerald-700 text-white font-medium'
-                        : 'bg-white border border-slate-200 text-slate-900'
+                        ? 'emerald-gradient-btn text-white font-medium'
+                        : 'bg-white border border-slate-200 text-slate-900 shadow-2xs'
                     }`}
                   >
                     <span className="font-bold block text-[10px] opacity-75 mb-1">
@@ -604,11 +595,11 @@ export const DoctorPortalView: React.FC<DoctorPortalViewProps> = ({ setActiveTab
                 placeholder="Send message to Maya Lin..."
                 value={replyText}
                 onChange={(e) => setReplyText(e.target.value)}
-                className="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:bg-white focus:border-emerald-600 focus:outline-none"
+                className="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:bg-white focus:border-emerald-500 focus:outline-none"
               />
               <button
                 type="submit"
-                className="px-5 py-2.5 bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-2xs"
+                className="px-5 py-2.5 emerald-gradient-btn text-white font-bold text-xs rounded-xl shadow-2xs"
               >
                 Send Message
               </button>
@@ -619,19 +610,19 @@ export const DoctorPortalView: React.FC<DoctorPortalViewProps> = ({ setActiveTab
 
       {/* Tab 5: Care Plan Studio */}
       {activeDoctorTab === 'careplans' && (
-        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-emerald-100 shadow-sm space-y-6 max-w-3xl mx-auto">
+        <div className="refreshing-card p-6 sm:p-8 space-y-6 max-w-3xl mx-auto">
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                <FileText className="w-5 h-5 text-emerald-700" />
+                <FileText className="w-5 h-5 text-emerald-600" />
                 Therapist Care Plan Authoring Studio
               </h3>
-              <p className="text-xs text-slate-500 mt-0.5">
+              <p className="text-xs text-slate-500 mt-0.5 font-medium">
                 Assign clinical coping strategies and daily exercises directly to Maya Lin's profile.
               </p>
             </div>
-            <span className="text-xs bg-emerald-100 text-emerald-900 font-bold px-3 py-1 rounded-full">
-              Therapist Authority Overrides Starter Form
+            <span className="text-xs bg-emerald-100 text-emerald-800 font-bold px-3 py-1 rounded-full border border-emerald-200">
+              Therapist Priority Overrides Starter Form
             </span>
           </div>
 
@@ -645,7 +636,7 @@ export const DoctorPortalView: React.FC<DoctorPortalViewProps> = ({ setActiveTab
                 required
                 value={carePlanTitle}
                 onChange={(e) => setCarePlanTitle(e.target.value)}
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:bg-white focus:border-emerald-600 focus:outline-none"
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:bg-white focus:border-emerald-500 focus:outline-none"
               />
             </div>
 
@@ -658,15 +649,15 @@ export const DoctorPortalView: React.FC<DoctorPortalViewProps> = ({ setActiveTab
                 required
                 value={carePlanSummary}
                 onChange={(e) => setCarePlanSummary(e.target.value)}
-                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:bg-white focus:border-emerald-600 focus:outline-none"
+                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:bg-white focus:border-emerald-500 focus:outline-none"
               />
             </div>
 
-            <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl space-y-2">
+            <div className="p-4 bg-emerald-50/90 border border-emerald-200 rounded-2xl space-y-2">
               <span className="text-xs font-bold text-emerald-950 block">
                 Assigned Coping Strategies (CBT & Grounding)
               </span>
-              <ul className="text-xs text-emerald-900 space-y-1 list-disc list-inside">
+              <ul className="text-xs text-emerald-900 space-y-1 list-disc list-inside font-medium">
                 <li>Box Breathing (4-4-4-4 technique)</li>
                 <li>5-4-3-2-1 Sensory Grounding Technique</li>
                 <li>Cognitive Reframing Journaling</li>
@@ -675,7 +666,7 @@ export const DoctorPortalView: React.FC<DoctorPortalViewProps> = ({ setActiveTab
 
             <button
               type="submit"
-              className="w-full py-3 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs rounded-xl shadow-md transition-all"
+              className="w-full py-3 emerald-gradient-btn text-white font-bold text-xs rounded-xl shadow-md transition-all"
             >
               Publish & Assign Care Plan to Patient
             </button>
