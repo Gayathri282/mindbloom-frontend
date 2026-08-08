@@ -30,7 +30,7 @@ import {
   ANALYTICS_METRICS,
 } from '@/lib/mockData';
 import { detectCrisis } from '@/lib/crisisDetection';
-import { generateInteractiveAiResponse } from '@/lib/aiBotEngine';
+import { getHumanAiResponse } from '@/lib/aiBotEngine';
 
 interface AppContextType {
   user: UserProfile;
@@ -420,23 +420,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setAiMessages((prev) => [...prev, crisisAiMsg]);
       }, 300);
     } else {
-      // Interactive psychoeducation AI response generated dynamically
-      const interactiveAiResponse = generateInteractiveAiResponse(content, user.full_name);
+      // Dynamic human-like conversational AI response
+      getHumanAiResponse(content, aiMessages, user.full_name).then((responseText) => {
+        const normalAiMsg: ChatMessage = {
+          id: `ai-resp-${Date.now()}`,
+          sender_id: 'ai-assistant',
+          sender_name: 'MindBloom AI Guide',
+          receiver_id: user.id,
+          content: responseText,
+          is_ai: true,
+          is_crisis: false,
+          created_at: new Date().toISOString(),
+        };
 
-      const normalAiMsg: ChatMessage = {
-        id: `ai-resp-${Date.now()}`,
-        sender_id: 'ai-assistant',
-        sender_name: 'MindBloom AI Guide',
-        receiver_id: user.id,
-        content: interactiveAiResponse.text,
-        is_ai: true,
-        is_crisis: false,
-        created_at: new Date().toISOString(),
-      };
-
-      setTimeout(() => {
         setAiMessages((prev) => [...prev, normalAiMsg]);
-      }, 500);
+      });
     }
   };
 
