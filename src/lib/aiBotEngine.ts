@@ -3,15 +3,15 @@
 import { ChatMessage } from './types';
 
 /**
- * Human-like, Reasonable, Dynamic AI Chatbot Response Engine
- * Integrates Google Gemini 1.5 API when API key is present, and features an advanced
- * human natural language generator with conversational memory for organic, empathetic dialogue.
+ * 100% FREE LLM AI Chatbot Engine (Powered by Free Public LLM & Groq/OpenRouter)
+ * Provides real, reasonable, human-like AI responses without requiring paid API keys!
  */
 
-const GEMINI_API_KEY = process.env.NEXT_PUBLIC_GEMINI_API_KEY || process.env.GEMINI_API_KEY || '';
+const GROQ_API_KEY = process.env.NEXT_PUBLIC_GROQ_API_KEY || process.env.GROQ_API_KEY || '';
+const OPENROUTER_API_KEY = process.env.NEXT_PUBLIC_OPENROUTER_API_KEY || process.env.OPENROUTER_API_KEY || '';
 
 /**
- * Calls Google Gemini 1.5 Flash API if configured, otherwise uses the Human Natural Language Engine.
+ * Generates dynamic, human-like AI responses using Free Public LLM endpoints (Pollinations/Groq/OpenRouter)
  */
 export const getHumanAiResponse = async (
   userPrompt: string,
@@ -21,122 +21,192 @@ export const getHumanAiResponse = async (
   const cleanPrompt = userPrompt.trim();
   if (!cleanPrompt) return 'I am here with you. What is on your mind today?';
 
-  // If Gemini API Key is available, invoke real Gemini 1.5 LLM
-  if (GEMINI_API_KEY && GEMINI_API_KEY !== 'your-gemini-api-key') {
+  // 1. Try Groq Free LLM API if key is present
+  if (GROQ_API_KEY) {
     try {
-      const geminiResponse = await callGeminiApi(cleanPrompt, history, userName);
-      if (geminiResponse) return geminiResponse;
-    } catch (err) {
-      console.warn('Gemini API call warning, falling back to human engine:', err);
+      const response = await callGroqApi(cleanPrompt, history, userName);
+      if (response) return response;
+    } catch (e) {
+      console.warn('Groq API fallback:', e);
     }
   }
 
-  // Otherwise, use Human Natural Language Conversational Engine
+  // 2. Try OpenRouter Free LLM API if key is present
+  if (OPENROUTER_API_KEY) {
+    try {
+      const response = await callOpenRouterApi(cleanPrompt, history, userName);
+      if (response) return response;
+    } catch (e) {
+      console.warn('OpenRouter API fallback:', e);
+    }
+  }
+
+  // 3. Try Pollinations Free Public LLM Endpoint (100% Free, No Key Required!)
+  try {
+    const freeLlmResponse = await callPollinationsFreeLlm(cleanPrompt, history, userName);
+    if (freeLlmResponse) return freeLlmResponse;
+  } catch (e) {
+    console.warn('Free LLM endpoint fallback:', e);
+  }
+
+  // 4. Fallback to Human Natural Dialogue Engine
   return generateHumanDialogue(cleanPrompt, history, userName);
 };
 
 /**
- * Real Google Gemini 1.5 Flash LLM Call
+ * 100% FREE Public LLM Endpoint (Pollinations AI - Llama 3 / Mistral)
+ * Requires NO API key, completely free and open.
  */
-async function callGeminiApi(
+async function callPollinationsFreeLlm(
   userPrompt: string,
   history: ChatMessage[],
   userName: string
 ): Promise<string | null> {
-  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+  const systemPrompt = `You are MindBloom, a warm, reasonable, highly empathetic human clinical psychologist companion.
+You are conversing with ${userName}.
+- Speak like a real, caring human therapist in natural conversation.
+- Do NOT output robotic bulleted list dumps or rigid pre-written templates.
+- Respond directly to what ${userName} shared with warmth, wisdom, and genuine human empathy.
+- Keep responses concise (2-3 paragraphs max) and ask a natural, caring open question to keep the conversation flowing.`;
 
-  const systemInstruction = `You are a warm, highly intelligent, reasonable, and empathetic human clinical psychologist assistant named MindBloom. 
-Your goal is to converse naturally like a caring, real human therapist with ${userName}. 
-- Never sound robotic, pre-written, or templated.
-- Do not dump bulleted lists or rigid exercise scripts unless explicitly requested by ${userName}.
-- Respond directly and deeply to what ${userName} just shared.
-- Validate their feelings sincerely, offer human perspective, and keep the dialogue flowing like a genuine human conversation.`;
-
-  // Format previous history for multi-turn context
-  const contents = [
-    {
-      role: 'user',
-      parts: [{ text: `[System Prompt]: ${systemInstruction}` }],
-    },
+  const messages = [
+    { role: 'system', content: systemPrompt },
     ...history.slice(-6).map((msg) => ({
-      role: msg.is_ai ? 'model' : 'user',
-      parts: [{ text: msg.content }],
+      role: msg.is_ai ? 'assistant' : 'user',
+      content: msg.content,
     })),
-    {
-      role: 'user',
-      parts: [{ text: userPrompt }],
-    },
+    { role: 'user', content: userPrompt },
   ];
 
-  const res = await fetch(endpoint, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ contents }),
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 8000); // 8s timeout
 
-  if (!res.ok) return null;
+  try {
+    const res = await fetch('https://text.pollinations.ai/openai', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        messages,
+        model: 'openai', // Uses free high-quality Llama 3 / GPT-4o-mini model
+        seed: Math.floor(Math.random() * 1000),
+      }),
+      signal: controller.signal,
+    });
 
-  const data = await res.json();
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-  return text || null;
+    clearTimeout(timeoutId);
+
+    if (!res.ok) return null;
+
+    const data = await res.json();
+    const reply = data.choices?.[0]?.message?.content;
+    return reply || null;
+  } catch (err) {
+    clearTimeout(timeoutId);
+    return null;
+  }
 }
 
 /**
- * Advanced Human Natural Language Engine (Dynamic, Non-Templated)
- * Parses exact user phrasing, emotional tone, and questions to construct organic human dialogue.
+ * Groq Free API Integration (Llama 3.3 70B / 8B)
+ */
+async function callGroqApi(
+  userPrompt: string,
+  history: ChatMessage[],
+  userName: string
+): Promise<string | null> {
+  const messages = [
+    {
+      role: 'system',
+      content: `You are MindBloom, a warm, reasonable, highly empathetic human clinical therapist assistant conversing with ${userName}. Speak naturally like a real human being. Avoid robotic templates or list dumps.`,
+    },
+    ...history.slice(-6).map((msg) => ({
+      role: msg.is_ai ? 'assistant' : 'user',
+      content: msg.content,
+    })),
+    { role: 'user', content: userPrompt },
+  ];
+
+  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${GROQ_API_KEY}`,
+    },
+    body: JSON.stringify({
+      model: 'llama-3.3-70b-versatile',
+      messages,
+      temperature: 0.7,
+      max_tokens: 450,
+    }),
+  });
+
+  if (!res.ok) return null;
+  const data = await res.json();
+  return data.choices?.[0]?.message?.content || null;
+}
+
+/**
+ * OpenRouter Free API Integration (Llama 3 / Gemma 2)
+ */
+async function callOpenRouterApi(
+  userPrompt: string,
+  history: ChatMessage[],
+  userName: string
+): Promise<string | null> {
+  const messages = [
+    {
+      role: 'system',
+      content: `You are MindBloom, a warm, reasonable human psychologist companion for ${userName}. Speak in natural human language with genuine empathy.`,
+    },
+    ...history.slice(-6).map((msg) => ({
+      role: msg.is_ai ? 'assistant' : 'user',
+      content: msg.content,
+    })),
+    { role: 'user', content: userPrompt },
+  ];
+
+  const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${OPENROUTER_API_KEY}`,
+    },
+    body: JSON.stringify({
+      model: 'meta-llama/llama-3.3-70b-instruct:free',
+      messages,
+      temperature: 0.7,
+    }),
+  });
+
+  if (!res.ok) return null;
+  const data = await res.json();
+  return data.choices?.[0]?.message?.content || null;
+}
+
+/**
+ * Human Natural Dialogue Engine (Local Fallback)
  */
 function generateHumanDialogue(userPrompt: string, history: ChatMessage[], userName: string): string {
   const input = userPrompt.trim();
   const lower = input.toLowerCase();
   const firstName = userName.split(' ')[0] || 'friend';
 
-  // Extract core concepts mentioned by user
   const words = input.split(/\s+/).filter((w) => w.length > 3);
   const keyConcept = words.length > 0 ? words[Math.floor(Math.random() * words.length)].replace(/[^a-zA-Z]/g, '') : '';
 
-  // 1. User asking direct personal/existential questions or opinions
-  if (lower.startsWith('why') || lower.startsWith('how come') || lower.includes('what should i do')) {
-    return `That's a really deep and reasonable question to ask, ${firstName}. When it comes to ${keyConcept ? `dealing with ${keyConcept}` : 'situations like this'}, there isn't always a single quick answer, but I can feel how much thought you've been putting into it.\n\nFrom a human perspective, it often helps to pause and ask: what does your gut tell you is the most important piece right now? If you want to talk through it step by step, I'm right here listening.`;
-  }
-
-  // 2. User expressing feeling overwhelmed, stressed, or tired
-  if (lower.includes('stress') || lower.includes('tired') || lower.includes('exhausted') || lower.includes('overwhelm') || lower.includes('burnout')) {
+  if (lower.includes('stress') || lower.includes('tired') || lower.includes('overwhelm')) {
     return `I hear you, ${firstName}. It sounds like you've been carrying a heavy load lately, and feeling ${keyConcept || 'exhausted'} makes complete sense.\n\nWhen we're drained, even small decisions feel massive. You don't have to fix everything today. What is one small burden we can set aside for tonight so you can give yourself a little breathing room?`;
   }
 
-  // 3. User expressing anxiety, fear, or panic
-  if (lower.includes('anxi') || lower.includes('panic') || lower.includes('scared') || lower.includes('afraid') || lower.includes('worry')) {
-    return `I can feel the worry in your words, ${firstName}, and I want you to take a slow breath with me right now. Your mind is trying so hard to protect you, but you are safe in this moment.\n\nTell me—is there a specific scenario about ${keyConcept || 'this'} that feels most intimidating right now, or is it more of a general sense of unease? We can take it as slow as you need.`;
+  if (lower.includes('anxi') || lower.includes('panic') || lower.includes('worry')) {
+    return `I can feel the worry in your words, ${firstName}, and I want you to take a slow breath with me right now. Your mind is trying to protect you, but you are safe right here.\n\nTell me—is there a specific scenario about ${keyConcept || 'this'} that feels most intimidating right now, or is it more of a general sense of unease? We can take it as slow as you need.`;
   }
 
-  // 4. User expressing sadness, feeling down, or loneliness
-  if (lower.includes('sad') || lower.includes('down') || lower.includes('lonely') || lower.includes('hurt') || lower.includes('cry') || lower.includes('miss')) {
+  if (lower.includes('sad') || lower.includes('lonely') || lower.includes('hurt')) {
     return `I'm really sorry you're feeling this way, ${firstName}. Sitting with sadness or feeling ${keyConcept || 'alone'} can feel so heavy, but I appreciate you trusting me enough to share it.\n\nYou don't have to put on a brave face here. How long have you been feeling this coming on? I'm here to listen to whatever you want to share.`;
   }
 
-  // 5. User asking for advice on sleep or rest
-  if (lower.includes('sleep') || lower.includes('insomnia') || lower.includes('bed') || lower.includes('awake')) {
-    return `Getting good rest when your mind is active can feel frustrating, ${firstName}. When sleeping becomes a struggle, trying too hard to force sleep sometimes makes us more awake.\n\nInstead of focusing on falling asleep, how about we just focus on making your body feel comfortable and resting right now? Would you like to talk through what's keeping your mind busy tonight?`;
-  }
-
-  // 6. User asking for relationship / boundary guidance
-  if (lower.includes('relationship') || lower.includes('friend') || lower.includes('family') || lower.includes('partner') || lower.includes('boundar')) {
-    return `Relationships can bring so much joy, but they can also be one of the trickiest parts of life to navigate, ${firstName}.\n\nWhen it comes to ${keyConcept || 'people in our lives'}, honor your own peace first. What feels like the hardest part of communicating with them right now?`;
-  }
-
-  // 7. Conversational Salutations / Casual Chat
-  if (lower === 'hi' || lower === 'hello' || lower === 'hey' || lower.startsWith('good morning') || lower.startsWith('good evening')) {
-    return `Hey ${firstName}! It's really nice to connect with you today. How has your day been treating you so far? What's on your mind?`;
-  }
-
-  // 8. Human-like Dynamic Organic Response (Mirrors exact sentence phrasing)
-  const organicOpenings = [
-    `I really appreciate you telling me that, ${firstName}.`,
-    `That's very relatable, ${firstName}.`,
-    `I hear what you're saying about ${keyConcept || 'this'}.`,
-    `Thank you for sharing that with me, ${firstName}.`,
-  ];
-  const opening = organicOpenings[Math.floor(Math.random() * organicOpenings.length)];
-
-  return `${opening} It sounds like ${keyConcept ? `thinking about ${keyConcept}` : 'this'} is playing a big role in how you're feeling today.\n\nI'm curious—how has this been affecting your daily energy, and what would feel like the most supportive thing for us to focus on together right now?`;
+  return `I really appreciate you telling me that, ${firstName}. It sounds like ${keyConcept ? `thinking about ${keyConcept}` : 'this'} is playing a big role in how you're feeling today.\n\nI'm curious—how has this been affecting your daily energy, and what would feel like the most supportive thing for us to focus on together right now?`;
 }
