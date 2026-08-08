@@ -30,6 +30,7 @@ import {
   ANALYTICS_METRICS,
 } from '@/lib/mockData';
 import { detectCrisis } from '@/lib/crisisDetection';
+import { generateInteractiveAiResponse } from '@/lib/aiBotEngine';
 
 interface AppContextType {
   user: UserProfile;
@@ -419,13 +420,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setAiMessages((prev) => [...prev, crisisAiMsg]);
       }, 300);
     } else {
-      // Normal psychoeducation AI response
+      // Interactive psychoeducation AI response generated dynamically
+      const interactiveAiResponse = generateInteractiveAiResponse(content, user.full_name);
+
       const normalAiMsg: ChatMessage = {
         id: `ai-resp-${Date.now()}`,
         sender_id: 'ai-assistant',
         sender_name: 'MindBloom AI Guide',
         receiver_id: user.id,
-        content: `Thank you for sharing that with me. Grounding and self-reflection are wonderful tools for emotional clarity. Remember that I am here to share coping exercises like 4-7-8 breathing or guided relaxation anytime you need!`,
+        content: interactiveAiResponse.text,
         is_ai: true,
         is_crisis: false,
         created_at: new Date().toISOString(),
