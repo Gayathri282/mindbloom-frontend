@@ -173,7 +173,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       email,
       full_name: name || 'New Patient',
       role: 'patient',
-      avatar_url: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=250&auto=format&fit=crop&q=80',
+      avatar_url: undefined, // Optional avatar - user may or may not add image
       bio: 'MindBloom member focusing on mental wellness.',
       created_at: new Date().toISOString(),
     };

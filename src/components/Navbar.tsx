@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { useApp } from '@/context/AppContext';
+import { UserAvatar } from '@/components/UserAvatar';
 import {
   ShieldAlert,
   Zap,
@@ -67,11 +68,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 onClick={openAuthModal}
                 className="flex items-center gap-2.5 p-1 rounded-full hover:bg-slate-100/80 transition-all"
               >
-                <img
-                  src={user.avatar_url}
-                  alt={user.full_name}
-                  className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border-2 border-sky-500 object-cover shadow-2xs"
-                />
+                <UserAvatar name={user.full_name} avatarUrl={user.avatar_url} size="sm" />
                 <div className="text-left hidden sm:block">
                   <p className="text-xs font-bold text-slate-800 leading-tight">
                     {user.full_name}

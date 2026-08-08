@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
+import { UserAvatar } from '@/components/UserAvatar';
 import { CrisisResourceCard } from '@/components/CrisisResourceCard';
 import {
   MessageSquare,
@@ -121,11 +122,7 @@ export const ChatView: React.FC = () => {
         ) : (
           <div className="bg-gradient-to-r from-sky-900 to-indigo-900 p-4 text-white flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <img
-                src="https://images.unsplash.com/photo-1594824813566-78a9c3d4a4d6?w=150&auto=format&fit=crop&q=80"
-                alt="Dr. Jenkins"
-                className="w-10 h-10 rounded-2xl border-2 border-white object-cover shadow-2xs"
-              />
+              <UserAvatar name="Dr. Sarah Jenkins, Psy.D." size="sm" />
               <div>
                 <h3 className="text-sm font-bold">Dr. Sarah Jenkins, Psy.D.</h3>
                 <p className="text-[11px] text-sky-100">
@@ -160,156 +157,155 @@ export const ChatView: React.FC = () => {
                 <CrisisResourceCard onDismiss={dismissCrisisAlert} isInline />
               )}
 
-              {(activeTab === 'ai' ? aiMessages : therapistMessages).map((msg) => {
-                const isUser = msg.sender_id === user.id;
+              {(activeTab === 'ai' ? aiMessages : therapistMessages).length === 0 ? (
+                <div className="text-center py-16 text-slate-400 text-xs font-medium">
+                  <MessageSquare className="w-8 h-8 mx-auto mb-2 text-sky-400 opacity-60" />
+                  No messages yet in this thread. Start by typing a message below.
+                </div>
+              ) : (
+                (activeTab === 'ai' ? aiMessages : therapistMessages).map((msg) => {
+                  const isUser = msg.sender_id === user.id;
 
-                return (
-                  <div
-                    key={msg.id}
-                    className={`flex flex-col ${isUser ? 'items-end' : 'items-start'}`}
-                  >
-                    <div className="flex items-end gap-2 max-w-[85%] sm:max-w-[75%]">
-                      {!isUser && (
-                        <img
-                          src={
-                            msg.is_ai
-                              ? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80'
-                              : 'https://images.unsplash.com/photo-1594824813566-78a9c3d4a4d6?w=100&auto=format&fit=crop&q=80'
-                          }
-                          alt="Avatar"
-                          className="w-7 h-7 rounded-full border border-sky-500 object-cover shrink-0 mb-1"
-                        />
-                      )}
+                  return (
+                    <div
+                      key={msg.id}
+                      className={`flex flex-col ${isUser ? 'items-end' : 'items-start'}`}
+                    >
+                      <div className="flex items-end gap-2 max-w-[85%] sm:max-w-[75%]">
+                        {!isUser && (
+                          <UserAvatar name={msg.sender_name} avatarUrl={msg.sender_avatar} size="xs" />
+                        )}
 
-                      <div
-                        className={`p-4 rounded-3xl text-xs leading-relaxed shadow-2xs ${
-                          msg.is_prescription
-                            ? 'bg-white border-2 border-sky-500 text-slate-900 rounded-bl-sm w-full sm:max-w-md'
-                            : msg.is_crisis
-                            ? 'bg-rose-50 border-2 border-rose-300 text-slate-900 rounded-bl-sm'
-                            : isUser
-                            ? 'blue-gradient-btn text-white rounded-br-sm font-medium'
-                            : msg.is_ai
-                            ? 'bg-white border border-slate-200 text-slate-900 rounded-bl-sm'
-                            : 'bg-white border border-slate-200 text-slate-900 rounded-bl-sm'
-                        }`}
-                      >
-                        <span className="font-bold block text-[10px] opacity-75 mb-1">
-                          {msg.sender_name}
-                        </span>
+                        <div
+                          className={`p-4 rounded-3xl text-xs leading-relaxed shadow-2xs ${
+                            msg.is_prescription
+                              ? 'bg-white border-2 border-sky-500 text-slate-900 rounded-bl-sm w-full sm:max-w-md'
+                              : msg.is_crisis
+                              ? 'bg-rose-50 border-2 border-rose-300 text-slate-900 rounded-bl-sm'
+                              : isUser
+                              ? 'blue-gradient-btn text-white rounded-br-sm font-medium'
+                              : msg.is_ai
+                              ? 'bg-white border border-slate-200 text-slate-900 rounded-bl-sm'
+                              : 'bg-white border border-slate-200 text-slate-900 rounded-bl-sm'
+                          }`}
+                        >
+                          <span className="font-bold block text-[10px] opacity-75 mb-1">
+                            {msg.sender_name}
+                          </span>
 
-                        {msg.is_prescription && msg.prescription_data ? (
-                          <div className="space-y-3">
-                            {/* Rx Header Badge */}
-                            <div className="bg-gradient-to-r from-sky-700 to-indigo-800 text-white p-3.5 rounded-2xl flex items-center justify-between border border-sky-600">
-                              <div className="flex items-center gap-2">
-                                <div className="p-1.5 bg-sky-600/60 rounded-xl text-sky-100">
-                                  <Pill className="w-4 h-4" />
-                                </div>
-                                <div>
-                                  <h4 className="text-xs font-extrabold tracking-wide uppercase">
-                                    Official Medical Prescription
-                                  </h4>
-                                  <span className="text-[10px] text-sky-100 font-semibold block">
-                                    Rx #: {msg.prescription_data.rx_number}
-                                  </span>
-                                </div>
-                              </div>
-                              <span className="text-[10px] bg-white/20 text-white font-bold px-2 py-0.5 rounded-full border border-white/30">
-                                Verified
-                              </span>
-                            </div>
-
-                            {/* Patient & Prescriber Info */}
-                            <div className="grid grid-cols-2 gap-2 text-[11px] bg-slate-50 p-2.5 rounded-xl border border-slate-200">
-                              <div>
-                                <span className="text-slate-500 block text-[10px]">Patient:</span>
-                                <span className="font-bold text-slate-900">{msg.prescription_data.patient_name}</span>
-                              </div>
-                              <div>
-                                <span className="text-slate-500 block text-[10px]">Issued Date:</span>
-                                <span className="font-semibold text-slate-900">{msg.prescription_data.issued_at}</span>
-                              </div>
-                            </div>
-
-                            {/* Clinical Impression */}
-                            <div className="text-[11px] bg-sky-50/80 p-2.5 rounded-xl border border-sky-100">
-                              <span className="text-sky-900 font-bold block text-[10px] mb-0.5">
-                                Clinical Impression / Diagnosis:
-                              </span>
-                              <p className="text-sky-950 font-medium">{msg.prescription_data.diagnosis}</p>
-                            </div>
-
-                            {/* Medications */}
-                            <div className="space-y-2">
-                              <span className="text-[11px] font-bold text-slate-900 flex items-center gap-1">
-                                <Stethoscope className="w-3.5 h-3.5 text-sky-600" />
-                                Prescribed Medications ({msg.prescription_data.medications.length})
-                              </span>
-
-                              {msg.prescription_data.medications.map((med) => (
-                                <div
-                                  key={med.id}
-                                  className="p-3 bg-white border border-slate-200 rounded-xl shadow-2xs space-y-1"
-                                >
-                                  <div className="flex items-center justify-between">
-                                    <span className="font-bold text-xs text-slate-900">{med.medication_name}</span>
-                                    <span className="text-[10px] bg-cyan-100 text-cyan-900 font-bold px-2 py-0.5 rounded">
-                                      {med.dosage}
+                          {msg.is_prescription && msg.prescription_data ? (
+                            <div className="space-y-3">
+                              {/* Rx Header Badge */}
+                              <div className="bg-gradient-to-r from-sky-700 to-indigo-800 text-white p-3.5 rounded-2xl flex items-center justify-between border border-sky-600">
+                                <div className="flex items-center gap-2">
+                                  <div className="p-1.5 bg-sky-600/60 rounded-xl text-sky-100">
+                                    <Pill className="w-4 h-4" />
+                                  </div>
+                                  <div>
+                                    <h4 className="text-xs font-extrabold tracking-wide uppercase">
+                                      Official Medical Prescription
+                                    </h4>
+                                    <span className="text-[10px] text-sky-100 font-semibold block">
+                                      Rx #: {msg.prescription_data.rx_number}
                                     </span>
                                   </div>
-                                  <div className="flex items-center justify-between text-[11px] text-slate-600 font-medium">
-                                    <span>Frequency: {med.frequency}</span>
-                                    <span>Duration: {med.duration}</span>
-                                  </div>
-                                  {med.instructions && (
-                                    <p className="text-[10px] text-slate-500 italic pt-1 border-t border-slate-100 mt-1">
-                                      Note: {med.instructions}
-                                    </p>
-                                  )}
                                 </div>
-                              ))}
-                            </div>
-
-                            {/* Signature & Actions */}
-                            <div className="pt-2 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-2">
-                              <div className="text-[10px] text-slate-600">
-                                <span className="font-bold text-sky-800 block flex items-center gap-1">
-                                  <CheckCircle className="w-3 h-3 text-sky-600" />
-                                  Electronically Signed
+                                <span className="text-[10px] bg-white/20 text-white font-bold px-2 py-0.5 rounded-full border border-white/30">
+                                  Verified
                                 </span>
-                                <span>{msg.prescription_data.doctor_signature}</span>
                               </div>
 
-                              <button
-                                onClick={() => alert(`Downloading official PDF copy of Prescription ${msg.prescription_data?.rx_number}...`)}
-                                className="w-full sm:w-auto px-3 py-1.5 blue-gradient-btn text-white font-bold text-[11px] rounded-xl flex items-center justify-center gap-1 shadow-2xs shrink-0"
-                              >
-                                <Download className="w-3 h-3" />
-                                Save PDF
-                              </button>
-                            </div>
-                          </div>
-                        ) : (
-                          <p>{msg.content}</p>
-                        )}
+                              {/* Patient & Prescriber Info */}
+                              <div className="grid grid-cols-2 gap-2 text-[11px] bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+                                <div>
+                                  <span className="text-slate-500 block text-[10px]">Patient:</span>
+                                  <span className="font-bold text-slate-900">{msg.prescription_data.patient_name}</span>
+                                </div>
+                                <div>
+                                  <span className="text-slate-500 block text-[10px]">Issued Date:</span>
+                                  <span className="font-semibold text-slate-900">{msg.prescription_data.issued_at}</span>
+                                </div>
+                              </div>
 
-                        {msg.is_crisis && (
-                          <div className="mt-3 pt-3 border-t border-rose-200">
-                            <CrisisResourceCard isInline />
-                          </div>
-                        )}
+                              {/* Clinical Impression */}
+                              <div className="text-[11px] bg-sky-50/80 p-2.5 rounded-xl border border-sky-100">
+                                <span className="text-sky-900 font-bold block text-[10px] mb-0.5">
+                                  Clinical Impression / Diagnosis:
+                                </span>
+                                <p className="text-sky-950 font-medium">{msg.prescription_data.diagnosis}</p>
+                              </div>
+
+                              {/* Medications */}
+                              <div className="space-y-2">
+                                <span className="text-[11px] font-bold text-slate-900 flex items-center gap-1">
+                                  <Stethoscope className="w-3.5 h-3.5 text-sky-600" />
+                                  Prescribed Medications ({msg.prescription_data.medications.length})
+                                </span>
+
+                                {msg.prescription_data.medications.map((med) => (
+                                  <div
+                                    key={med.id}
+                                    className="p-3 bg-white border border-slate-200 rounded-xl shadow-2xs space-y-1"
+                                  >
+                                    <div className="flex items-center justify-between">
+                                      <span className="font-bold text-xs text-slate-900">{med.medication_name}</span>
+                                      <span className="text-[10px] bg-cyan-100 text-cyan-900 font-bold px-2 py-0.5 rounded">
+                                        {med.dosage}
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center justify-between text-[11px] text-slate-600 font-medium">
+                                      <span>Frequency: {med.frequency}</span>
+                                      <span>Duration: {med.duration}</span>
+                                    </div>
+                                    {med.instructions && (
+                                      <p className="text-[10px] text-slate-500 italic pt-1 border-t border-slate-100 mt-1">
+                                        Note: {med.instructions}
+                                      </p>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+
+                              {/* Signature & Actions */}
+                              <div className="pt-2 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-2">
+                                <div className="text-[10px] text-slate-600">
+                                  <span className="font-bold text-sky-800 block flex items-center gap-1">
+                                    <CheckCircle className="w-3 h-3 text-sky-600" />
+                                    Electronically Signed
+                                  </span>
+                                  <span>{msg.prescription_data.doctor_signature}</span>
+                                </div>
+
+                                <button
+                                  onClick={() => alert(`Downloading official PDF copy of Prescription ${msg.prescription_data?.rx_number}...`)}
+                                  className="w-full sm:w-auto px-3 py-1.5 blue-gradient-btn text-white font-bold text-[11px] rounded-xl flex items-center justify-center gap-1 shadow-2xs shrink-0"
+                                >
+                                  <Download className="w-3 h-3" />
+                                  Save PDF
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <p>{msg.content}</p>
+                          )}
+
+                          {msg.is_crisis && (
+                            <div className="mt-3 pt-3 border-t border-rose-200">
+                              <CrisisResourceCard isInline />
+                            </div>
+                          )}
+                        </div>
                       </div>
+                      <span className="text-[10px] text-slate-400 mt-1 px-1 font-medium">
+                        {new Date(msg.created_at).toLocaleTimeString([], {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </span>
                     </div>
-                    <span className="text-[10px] text-slate-400 mt-1 px-1 font-medium">
-                      {new Date(msg.created_at).toLocaleTimeString([], {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </span>
-                  </div>
-                );
-              })}
+                  );
+                })
+              )}
               <div ref={messagesEndRef} />
             </div>
 

@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useApp } from '@/context/AppContext';
+import { UserAvatar } from '@/components/UserAvatar';
 import {
   Video,
   Calendar,
@@ -108,11 +109,7 @@ export const DoctorPortalView: React.FC<DoctorPortalViewProps> = ({ setActiveTab
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative z-10">
           <div className="flex items-center gap-5">
             <div className="relative shrink-0">
-              <img
-                src={user.avatar_url || 'https://images.unsplash.com/photo-1594824813566-78a9c3d4a4d6?w=250&auto=format&fit=crop&q=80'}
-                alt={user.full_name}
-                className="w-18 h-18 sm:w-20 sm:h-20 rounded-2xl border-2 border-emerald-400 object-cover shadow-lg"
-              />
+              <UserAvatar name={user.full_name} avatarUrl={user.avatar_url} size="xl" />
               <span className="absolute -bottom-1 -right-1 bg-emerald-500 text-white p-1 rounded-full text-xs shadow">
                 ✓
               </span>
