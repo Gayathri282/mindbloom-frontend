@@ -24,12 +24,12 @@ export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab })
 
   let navItems = [];
 
-  if (user.role === 'therapist') {
+  if (user.role === 'therapist' || user.role === 'counselor') {
     navItems = [
-      { id: 'doctor_portal', label: 'Practice Console', icon: Stethoscope },
-      { id: 'video_call', label: 'Consultation Room', icon: Video },
+      { id: 'doctor_portal', label: 'My Dashboard', icon: Stethoscope },
+      { id: 'video_call', label: 'Video Session', icon: Video },
       { id: 'chat', label: 'Patient Inbox', icon: MessageSquare },
-      { id: 'careplan', label: 'Care Plan Studio', icon: FileText },
+      { id: 'careplan', label: 'Care Plan', icon: FileText },
     ];
   } else if (user.role === 'admin') {
     navItems = [

@@ -116,6 +116,7 @@ interface AppContextType {
   submitCounselorApplication: (appData: Omit<CounselorApplication, 'id' | 'status' | 'submitted_at'>) => Promise<boolean>;
   approveCounselorApplication: (applicationId: string) => void;
   rejectCounselorApplication: (applicationId: string, reason: string) => void;
+  refreshCounselorApplications: () => Promise<void>;
   addSessionType: (durationMinutes: number, price: number, label: string) => void;
   toggleSessionType: (sessionTypeId: string) => void;
 }
@@ -238,30 +239,44 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, [user, usersList, counselorApplications, appointments, carePlan, communityPosts, sessionTypes]);
 
-  // Fetch counselor applications from backend and reconcile with usersList
-  useEffect(() => {
-    const fetchBackendApplications = async () => {
-      try {
-        const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
-        const res = await fetch(`${backendUrl}/counselors/applications`);
-        if (res.ok) {
-          const data = await res.json();
-          if (Array.isArray(data.applications) && data.applications.length > 0) {
-            setCounselorApplications((prev) => {
-              const map = new Map<string, CounselorApplication>();
-              data.applications.forEach((app: CounselorApplication) => map.set(app.id, app));
-              prev.forEach((app) => map.set(app.id, app));
-              return Array.from(map.values());
+  // Fetch counselor applications from backend (shared function used on mount and by admin refresh)
+  const refreshCounselorApplications = async () => {
+    try {
+      const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+      const res = await fetch(`${backendUrl}/counselors/applications`);
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data.applications) && data.applications.length > 0) {
+          setCounselorApplications((prev) => {
+            const map = new Map<string, CounselorApplication>();
+            // Backend data goes in first (authoritative source)
+            data.applications.forEach((app: CounselorApplication) => map.set(app.id, app));
+            // Local-only entries (submitted in this session, not yet on backend) are merged in
+            prev.forEach((app) => {
+              if (!map.has(app.id)) map.set(app.id, app);
             });
-          }
+            return Array.from(map.values());
+          });
+        } else {
+          // Backend returned empty — don't wipe local state, just keep what we have
         }
-      } catch (e) {
-        console.warn('Notice fetching backend counselor applications:', e);
       }
-    };
+    } catch (e) {
+      console.warn('Notice fetching backend counselor applications:', e);
+    }
+  };
 
-    fetchBackendApplications();
+  // Fetch on mount
+  useEffect(() => {
+    refreshCounselorApplications();
   }, []);
+
+  // Auto-refresh applications when admin logs in
+  useEffect(() => {
+    if (user.role === 'admin') {
+      refreshCounselorApplications();
+    }
+  }, [user.id, user.role]);
 
   // Reconcile pending counselor users from usersList into counselorApplications
   useEffect(() => {
@@ -995,6 +1010,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         submitCounselorApplication,
         approveCounselorApplication,
         rejectCounselorApplication,
+        refreshCounselorApplications,
         addSessionType,
         toggleSessionType,
       }}

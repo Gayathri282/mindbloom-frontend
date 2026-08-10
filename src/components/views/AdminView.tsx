@@ -20,6 +20,7 @@ import {
   UserCheck,
   UserX,
   User,
+  RefreshCw,
 } from 'lucide-react';
 
 export const AdminView: React.FC = () => {
@@ -33,6 +34,7 @@ export const AdminView: React.FC = () => {
     counselorApplications,
     approveCounselorApplication,
     rejectCounselorApplication,
+    refreshCounselorApplications,
     allUsersList,
     deleteUserProfile,
   } = useApp();
@@ -45,9 +47,16 @@ export const AdminView: React.FC = () => {
   const [userSearchQuery, setUserSearchQuery] = useState<string>('');
   const [deleteConfirmUser, setDeleteConfirmUser] = useState<UserProfile | null>(null);
   const [inspectUser, setInspectUser] = useState<UserProfile | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
 
   const [rejectionModalId, setRejectionModalId] = useState<string | null>(null);
   const [rejectionReasonInput, setRejectionReasonInput] = useState<string>('');
+
+  const handleRefreshApplications = async () => {
+    setIsRefreshing(true);
+    await refreshCounselorApplications();
+    setTimeout(() => setIsRefreshing(false), 800);
+  };
 
   const pendingCounselorApps = counselorApplications.filter((a) => a.status === 'pending');
   const pendingPosts = communityPosts.filter((p) => p.status === 'pending');
@@ -148,14 +157,32 @@ export const AdminView: React.FC = () => {
                   Review applicant credentials, state psychology license numbers, and Supabase Storage ID documents before approving live bookable status.
                 </p>
               </div>
-              <span className="text-xs font-extrabold text-emerald-900 bg-emerald-100 px-3 py-1 rounded-full border border-emerald-300">
-                {counselorApplications.length} Total Applications
-              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleRefreshApplications}
+                  disabled={isRefreshing}
+                  className="flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-emerald-700 bg-slate-100 hover:bg-emerald-50 px-3 py-1.5 rounded-xl border border-slate-200 hover:border-emerald-300 transition-all disabled:opacity-50"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
+                  {isRefreshing ? 'Refreshing...' : 'Refresh'}
+                </button>
+                <span className="text-xs font-extrabold text-emerald-900 bg-emerald-100 px-3 py-1 rounded-full border border-emerald-300">
+                  {counselorApplications.length} Total Applications
+                </span>
+              </div>
             </div>
 
             {counselorApplications.length === 0 ? (
-              <div className="text-center py-12 bg-slate-50/70 rounded-3xl border border-dashed border-slate-200 text-xs text-slate-500 font-medium">
-                No counselor applications submitted yet. Prospective counselors can apply via the sign-up modal.
+              <div className="text-center py-12 bg-slate-50/70 rounded-3xl border border-dashed border-slate-200 space-y-3">
+                <p className="text-xs text-slate-500 font-medium">No counselor applications found yet.</p>
+                <button
+                  onClick={handleRefreshApplications}
+                  disabled={isRefreshing}
+                  className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 hover:text-emerald-900 underline disabled:opacity-50"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
+                  {isRefreshing ? 'Checking backend...' : 'Check backend for applications'}
+                </button>
               </div>
             ) : (
               <div className="space-y-4">
