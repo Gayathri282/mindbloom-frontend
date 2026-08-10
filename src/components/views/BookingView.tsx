@@ -47,7 +47,7 @@ const SPECIALTY_FILTERS = [
 ];
 
 export const BookingView: React.FC<BookingViewProps> = ({ setActiveTab }) => {
-  const { user, usersList, slots, addSlot, removeSlot, bookAppointment, sessionTypes } = useApp();
+  const { user, usersList, slots, addSlot, removeSlot, bookAppointment, sessionTypes, counselorApplications } = useApp();
 
   // Search & Filter State
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -89,10 +89,42 @@ export const BookingView: React.FC<BookingViewProps> = ({ setActiveTab }) => {
     }
   }, []);
 
-  // Filter approved counselors
-  const approvedCounselors = usersList.filter(
-    (u) => (u.role === 'counselor' || u.role === 'therapist') && (u.status === 'approved' || !u.status)
-  );
+  // Filter approved counselors from usersList & counselorApplications
+  const approvedCounselorMap = new Map<string, UserProfile>();
+  
+  // 1. Add from usersList
+  usersList.forEach((u) => {
+    if ((u.role === 'counselor' || u.role === 'therapist') && (u.status === 'approved' || !u.status)) {
+      approvedCounselorMap.set(u.id, u);
+    }
+  });
+
+  // 2. Add from approved counselorApplications
+  counselorApplications.forEach((app) => {
+    if (app.status === 'approved') {
+      const appId = app.user_id || app.id;
+      if (!approvedCounselorMap.has(appId)) {
+        approvedCounselorMap.set(appId, {
+          id: appId,
+          email: app.email,
+          full_name: app.full_name,
+          role: 'counselor',
+          status: 'approved',
+          avatar_url: app.avatar_url,
+          bio: app.bio,
+          credentials: app.degree,
+          license_number: app.license_number,
+          specialties: app.specialties,
+          years_of_experience: app.years_of_experience,
+          languages: app.languages,
+          starting_price: 499,
+          created_at: app.submitted_at || new Date().toISOString(),
+        });
+      }
+    }
+  });
+
+  const approvedCounselors = Array.from(approvedCounselorMap.values());
 
   const filteredCounselors = approvedCounselors.filter((counselor) => {
     const matchesSearch =
@@ -110,23 +142,38 @@ export const BookingView: React.FC<BookingViewProps> = ({ setActiveTab }) => {
 
   const selectedCounselor = approvedCounselors.find((c) => c.id === selectedCounselorId) || approvedCounselors[0];
 
-  const counselorSessionTypes = sessionTypes.filter(
-    (st) => st.counselor_id === selectedCounselor?.id && st.is_active
+  const rawSessionTypes = sessionTypes.filter(
+    (st) => (st.counselor_id === selectedCounselor?.id || st.counselor_id === 'therapist-1') && st.is_active
   );
+  const counselorSessionTypes =
+    rawSessionTypes.length > 0
+      ? rawSessionTypes
+      : [
+          {
+            id: `st-30m-${selectedCounselor?.id}`,
+            counselor_id: selectedCounselor?.id || 'therapist-1',
+            duration_minutes: 30,
+            price: selectedCounselor?.starting_price || 499,
+            label: '30-Minute Focus Session',
+            is_active: true,
+          },
+          {
+            id: `st-60m-${selectedCounselor?.id}`,
+            counselor_id: selectedCounselor?.id || 'therapist-1',
+            duration_minutes: 60,
+            price: (selectedCounselor?.starting_price || 499) * 2 - 100,
+            label: '60-Minute Comprehensive Consultation',
+            is_active: true,
+          },
+        ];
 
   const selectedSessionTypeObj =
     counselorSessionTypes.find((st) => st.id === selectedSessionTypeId) ||
-    counselorSessionTypes[0] || {
-      id: 'default-30m',
-      counselor_id: selectedCounselor?.id || 'therapist-1',
-      duration_minutes: 30,
-      price: selectedCounselor?.starting_price || 499,
-      label: '30-Minute Consultation Session',
-      is_active: true,
-    };
+    counselorSessionTypes[0];
 
-  const counselorSlots = slots.filter((s) => s.therapist_id === selectedCounselor?.id);
-  const selectedSlotObj = slots.find((s) => s.id === selectedSlotId);
+  const specificSlots = slots.filter((s) => s.therapist_id === selectedCounselor?.id);
+  const counselorSlots = specificSlots.length > 0 ? specificSlots : slots.filter((s) => !s.is_booked);
+  const selectedSlotObj = counselorSlots.find((s) => s.id === selectedSlotId) || counselorSlots[0];
 
   const currentPrice = selectedSessionTypeObj.price || 499;
 

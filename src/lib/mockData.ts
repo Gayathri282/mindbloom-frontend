@@ -31,6 +31,57 @@ export const DEFAULT_PATIENT: UserProfile = {
   created_at: new Date().toISOString(),
 };
 
+export const INITIAL_COUNSELORS: UserProfile[] = [
+  {
+    id: 'therapist-1',
+    email: 'sarah.jenkins@mindbloom.app',
+    full_name: 'Dr. Sarah Jenkins, Psy.D.',
+    role: 'counselor',
+    status: 'approved',
+    avatar_url: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=300&auto=format&fit=crop&q=80',
+    bio: 'Senior Clinical Psychologist specializing in Cognitive Behavioral Therapy (CBT), panic disorders, and acute anxiety management.',
+    credentials: 'Psy.D. Clinical Psychology, Stanford University',
+    license_number: 'PSY-CA-2024-88941',
+    specialties: ['Cognitive Behavioral Therapy (CBT)', 'Anxiety & Panic', 'Mindfulness & Grounding'],
+    years_of_experience: 12,
+    languages: ['English', 'Spanish'],
+    starting_price: 499,
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: 'therapist-2',
+    email: 'marcus.vance@mindbloom.app',
+    full_name: 'Dr. Marcus Vance, Ph.D.',
+    role: 'counselor',
+    status: 'approved',
+    avatar_url: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=300&auto=format&fit=crop&q=80',
+    bio: 'Licensed Psychotherapist with over 10 years of experience helping individuals navigate grief, trauma (EMDR), and life transitions.',
+    credentials: 'Ph.D. Counseling Psychology, Columbia University',
+    license_number: 'PSY-NY-2022-44120',
+    specialties: ['Trauma & PTSD', 'Grief & Bereavement', 'Relationships & Marriage'],
+    years_of_experience: 10,
+    languages: ['English'],
+    starting_price: 699,
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: 'therapist-3',
+    email: 'priya.sharma@mindbloom.app',
+    full_name: 'Dr. Priya Sharma, M.D.',
+    role: 'counselor',
+    status: 'approved',
+    avatar_url: 'https://images.unsplash.com/photo-1594824813566-88855ce78961?w=300&auto=format&fit=crop&q=80',
+    bio: 'Integrative Psychiatrist specializing in holistic mental wellness, adolescent counseling, and stress-reduction mindfulness techniques.',
+    credentials: 'M.D. Psychiatry, Johns Hopkins School of Medicine',
+    license_number: 'MD-MD-2023-99301',
+    specialties: ['Adolescent Counseling', 'Mindfulness & Grounding', 'Anxiety & Panic'],
+    years_of_experience: 8,
+    languages: ['English', 'Hindi'],
+    starting_price: 599,
+    created_at: new Date().toISOString(),
+  },
+];
+
 // Initial Availability Slots Scoped per Counselor
 export const INITIAL_SLOTS: AvailabilitySlot[] = [
   {

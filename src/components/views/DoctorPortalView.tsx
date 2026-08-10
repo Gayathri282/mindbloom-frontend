@@ -6,7 +6,7 @@ import { UserAvatar } from '@/components/UserAvatar';
 import { AvailabilitySlot } from '@/lib/types';
 import {
   Video,
-  Calendar,
+  Calendar as CalendarIcon,
   Clock,
   User,
   FileText,
@@ -26,10 +26,63 @@ import {
   CheckCircle,
   AlertCircle,
   IndianRupee,
+  Zap,
+  ChevronRight,
 } from 'lucide-react';
 
 interface DoctorPortalViewProps {
   setActiveTab: (tab: string) => void;
+}
+
+// Helpers for Calendar Date & Time Calculations
+function getTodayIsoString(): string {
+  const d = new Date();
+  return d.toISOString().split('T')[0];
+}
+
+function getTomorrowIsoString(): string {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  return d.toISOString().split('T')[0];
+}
+
+function formatDayLabelFromDate(dateStr: string): string {
+  if (!dateStr) return 'Upcoming';
+  const today = getTodayIsoString();
+  const tomorrow = getTomorrowIsoString();
+
+  if (dateStr === today) return 'Today';
+  if (dateStr === tomorrow) return 'Tomorrow';
+
+  const [year, month, day] = dateStr.split('-').map(Number);
+  const date = new Date(year, month - 1, day);
+  return date.toLocaleDateString('en-US', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+}
+
+function formatTimeRangeFromStart(start24: string, durationMins: number = 50): string {
+  if (!start24) return '10:00 AM - 10:50 AM';
+  const [hStr, mStr] = start24.split(':');
+  let startHour = parseInt(hStr, 10);
+  let startMin = parseInt(mStr, 10);
+
+  const startAmPm = startHour >= 12 ? 'PM' : 'AM';
+  const startDispHour = startHour % 12 === 0 ? 12 : startHour % 12;
+  const startDispMin = startMin < 10 ? `0${startMin}` : `${startMin}`;
+
+  let totalEndMins = startHour * 60 + startMin + durationMins;
+  let endHour = Math.floor(totalEndMins / 60) % 24;
+  let endMin = totalEndMins % 60;
+
+  const endAmPm = endHour >= 12 ? 'PM' : 'AM';
+  const endDispHour = endHour % 12 === 0 ? 12 : endHour % 12;
+  const endDispMin = endMin < 10 ? `0${endMin}` : `${endMin}`;
+
+  return `${startDispHour}:${startDispMin} ${startAmPm} - ${endDispHour}:${endDispMin} ${endAmPm}`;
 }
 
 export const DoctorPortalView: React.FC<DoctorPortalViewProps> = ({ setActiveTab }) => {
@@ -67,14 +120,16 @@ export const DoctorPortalView: React.FC<DoctorPortalViewProps> = ({ setActiveTab
     sessionNotes[upcomingAppt?.id || ''] || ''
   );
 
-  // Slot add form
-  const [newDay, setNewDay] = useState('Tomorrow');
-  const [newTime, setNewTime] = useState('2:00 PM - 2:50 PM');
+  // ── Calendar & Time Slot Picker State ──
+  const [slotDateInput, setSlotDateInput] = useState<string>(getTomorrowIsoString());
+  const [slotTimeInput, setSlotTimeInput] = useState<string>('10:00');
+  const [slotDurationMins, setSlotDurationMins] = useState<number>(50);
 
-  // Inline slot editing state
+  // Inline Slot Editing State
   const [editingSlotId, setEditingSlotId] = useState<string | null>(null);
-  const [editDay, setEditDay] = useState('');
-  const [editTime, setEditTime] = useState('');
+  const [editDateInput, setEditDateInput] = useState<string>(getTomorrowIsoString());
+  const [editTimeInput, setEditTimeInput] = useState<string>('14:00');
+  const [editDurationMins, setEditDurationMins] = useState<number>(50);
 
   // Session type inputs
   const [newStDuration, setNewStDuration] = useState<number>(45);
@@ -82,9 +137,6 @@ export const DoctorPortalView: React.FC<DoctorPortalViewProps> = ({ setActiveTab
   const [newStLabel, setNewStLabel] = useState<string>('45-Minute Intermediate Session');
 
   const [replyText, setReplyText] = useState('');
-
-  const [carePlanTitle, setCarePlanTitle] = useState(carePlan.title);
-  const [carePlanSummary, setCarePlanSummary] = useState(carePlan.summary);
 
   const mySessionTypes = sessionTypes.filter(
     (st) => st.counselor_id === user.id || st.counselor_id === 'therapist-1'
@@ -104,30 +156,46 @@ export const DoctorPortalView: React.FC<DoctorPortalViewProps> = ({ setActiveTab
     }
   };
 
-  const handleAddSlot = (e: React.FormEvent) => {
+  // Add single slot from Calendar Picker
+  const handleAddSlotFromCalendar = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newDay.trim() || !newTime.trim()) return;
-    addSlot(newDay, newTime);
-    setNewDay('Tomorrow');
-    setNewTime('2:00 PM - 2:50 PM');
+    const dayLabel = formatDayLabelFromDate(slotDateInput);
+    const timeLabel = formatTimeRangeFromStart(slotTimeInput, slotDurationMins);
+
+    addSlot(dayLabel, timeLabel);
+    alert(`Slot published for ${dayLabel} at ${timeLabel}`);
+  };
+
+  // Quick Batch Add Slots (e.g. Morning or Afternoon)
+  const handleBatchAddSlots = (batchType: 'morning' | 'afternoon') => {
+    const dayLabel = formatDayLabelFromDate(slotDateInput);
+    const times = batchType === 'morning' ? ['09:00', '10:00', '11:00'] : ['14:00', '15:00', '16:00'];
+
+    times.forEach((t) => {
+      const timeLabel = formatTimeRangeFromStart(t, 50);
+      addSlot(dayLabel, timeLabel);
+    });
+
+    alert(`Published 3 ${batchType} availability slots for ${dayLabel}!`);
   };
 
   const handleStartEdit = (slot: AvailabilitySlot) => {
     setEditingSlotId(slot.id);
-    setEditDay(slot.day_label || '');
-    setEditTime(slot.time_label || '');
+    setEditDateInput(getTomorrowIsoString());
+    setEditTimeInput('10:00');
+    setEditDurationMins(50);
   };
 
   const handleCancelEdit = () => {
     setEditingSlotId(null);
-    setEditDay('');
-    setEditTime('');
   };
 
   const handleSaveEdit = (slotId: string) => {
-    // Remove old slot and add updated one (re-use addSlot + removeSlot pattern)
+    const dayLabel = formatDayLabelFromDate(editDateInput);
+    const timeLabel = formatTimeRangeFromStart(editTimeInput, editDurationMins);
+
     removeSlot(slotId);
-    addSlot(editDay.trim() || 'Updated Day', editTime.trim() || 'Updated Time');
+    addSlot(dayLabel, timeLabel);
     setEditingSlotId(null);
   };
 
@@ -144,12 +212,6 @@ export const DoctorPortalView: React.FC<DoctorPortalViewProps> = ({ setActiveTab
     if (!replyText.trim()) return;
     sendTherapistMessage(replyText);
     setReplyText('');
-  };
-
-  const handlePublishCarePlan = (e: React.FormEvent) => {
-    e.preventDefault();
-    saveTherapistCarePlan({ title: carePlanTitle, summary: carePlanSummary });
-    alert('Care Plan published and assigned to patient.');
   };
 
   return (
@@ -169,7 +231,7 @@ export const DoctorPortalView: React.FC<DoctorPortalViewProps> = ({ setActiveTab
             <div>
               <div className="flex items-center gap-2 mb-1 flex-wrap">
                 <span className="px-2.5 py-0.5 bg-emerald-500/20 text-emerald-200 text-[11px] font-bold rounded-full border border-emerald-400/30 flex items-center gap-1">
-                  <Stethoscope className="w-3 h-3" /> Licensed Practitioner
+                  <Stethoscope className="w-3 h-3" /> Verified Practitioner
                 </span>
                 {unresolvedCrisisCount > 0 && (
                   <span className="px-2.5 py-0.5 bg-rose-500/30 text-rose-100 text-[11px] font-bold rounded-full border border-rose-400/40 flex items-center gap-1 animate-bounce">
@@ -191,7 +253,7 @@ export const DoctorPortalView: React.FC<DoctorPortalViewProps> = ({ setActiveTab
               <p className="text-[10px] text-emerald-200 font-semibold">Upcoming</p>
             </div>
             <div className="bg-white/10 backdrop-blur-sm px-4 py-2.5 rounded-2xl border border-white/20 text-center">
-              <p className="text-xl font-extrabold">{mySlots.filter(s => !s.is_booked).length}</p>
+              <p className="text-xl font-extrabold">{mySlots.filter((s) => !s.is_booked).length}</p>
               <p className="text-[10px] text-emerald-200 font-semibold">Open Slots</p>
             </div>
             <div className="bg-white/10 backdrop-blur-sm px-4 py-2.5 rounded-2xl border border-white/20 text-center">
@@ -204,9 +266,9 @@ export const DoctorPortalView: React.FC<DoctorPortalViewProps> = ({ setActiveTab
         {/* ── Tab Bar ── */}
         <div className="relative z-10 flex flex-wrap bg-white/10 backdrop-blur-md p-1.5 rounded-2xl border border-white/20 gap-1 mt-6">
           {[
-            { id: 'schedule', label: 'Upcoming Sessions', icon: Calendar },
+            { id: 'schedule', label: 'Upcoming Sessions', icon: CalendarIcon },
             { id: 'patients', label: 'My Patients', icon: User },
-            { id: 'slots', label: 'Availability Slots', icon: Clock },
+            { id: 'slots', label: 'Availability Calendar Picker', icon: Clock },
             { id: 'session_types', label: 'Session Rates', icon: IndianRupee },
           ].map(({ id, label, icon: Icon }) => (
             <button
@@ -234,7 +296,7 @@ export const DoctorPortalView: React.FC<DoctorPortalViewProps> = ({ setActiveTab
             <div className="refreshing-card p-6">
               <div className="flex items-center justify-between mb-5">
                 <h3 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
-                  <Video className="w-5 h-5 text-emerald-600" /> All Consultations
+                  <Video className="w-5 h-5 text-emerald-600" /> Consultations & Appointments
                 </h3>
                 <span className="text-xs font-bold text-emerald-800 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
                   {appointments.length} Total
@@ -302,13 +364,12 @@ export const DoctorPortalView: React.FC<DoctorPortalViewProps> = ({ setActiveTab
 
           {/* Quick session notes sidebar */}
           <div className="space-y-4">
-            {/* Crisis alerts */}
             {unresolvedCrisisCount > 0 && (
               <div className="refreshing-card p-4 border border-rose-200 bg-rose-50/60 space-y-3">
                 <h4 className="text-sm font-extrabold text-rose-800 flex items-center gap-2">
                   <ShieldAlert className="w-4 h-4" /> Crisis Alerts
                 </h4>
-                {crisisLogs.filter(l => !l.resolved).map((log) => (
+                {crisisLogs.filter((l) => !l.resolved).map((log) => (
                   <div key={log.id} className="p-3 bg-white border border-rose-200 rounded-xl text-xs space-y-1.5">
                     <p className="font-bold text-slate-900">{log.patient_name}</p>
                     <p className="text-rose-600 font-medium text-[11px]">{log.trigger_phrase_category}</p>
@@ -353,7 +414,7 @@ export const DoctorPortalView: React.FC<DoctorPortalViewProps> = ({ setActiveTab
             {/* Quick message */}
             <div className="refreshing-card p-5 space-y-3">
               <h4 className="text-sm font-extrabold text-slate-900 flex items-center gap-2">
-                <MessageSquare className="w-4 h-4 text-sky-600" /> Quick Message
+                <MessageSquare className="w-4 h-4 text-sky-600" /> Quick Patient Message
               </h4>
               <form onSubmit={handleSendReply} className="space-y-2">
                 <textarea
@@ -399,20 +460,16 @@ export const DoctorPortalView: React.FC<DoctorPortalViewProps> = ({ setActiveTab
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {appointments.map((appt) => (
                   <div key={appt.id} className="p-5 bg-gradient-to-br from-slate-50 to-emerald-50/20 border border-slate-200 rounded-2xl space-y-4">
-                    {/* Patient header */}
                     <div className="flex items-center gap-3">
                       <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-100 to-teal-100 border-2 border-emerald-300 flex items-center justify-center text-emerald-800 font-extrabold text-base shrink-0">
                         {appt.patient_name?.charAt(0) || 'P'}
                       </div>
                       <div>
                         <h4 className="text-sm font-extrabold text-slate-900">{appt.patient_name}</h4>
-                        <p className="text-[11px] text-slate-500 font-medium">
-                          Consultation Session
-                        </p>
+                        <p className="text-[11px] text-slate-500 font-medium">Consultation Session</p>
                       </div>
                     </div>
 
-                    {/* Session info */}
                     <div className="grid grid-cols-2 gap-2 text-xs">
                       <div className="bg-white p-2.5 rounded-xl border border-slate-100">
                         <p className="text-slate-500 text-[10px] font-semibold uppercase">Scheduled</p>
@@ -424,7 +481,6 @@ export const DoctorPortalView: React.FC<DoctorPortalViewProps> = ({ setActiveTab
                       </div>
                     </div>
 
-                    {/* Actions */}
                     <div className="flex gap-2">
                       <button
                         onClick={() => {
@@ -436,26 +492,27 @@ export const DoctorPortalView: React.FC<DoctorPortalViewProps> = ({ setActiveTab
                         <Video className="w-3.5 h-3.5" /> Start Call
                       </button>
                       <button
-                        onClick={() => sendPrescription({
-                          id: `rx-${Date.now()}`,
-                          appointment_id: appt.id,
-                          patient_id: appt.patient_id || 'patient-1',
-                          patient_name: appt.patient_name,
-                          therapist_name: user.full_name,
-                          diagnosis: 'Anxiety & Stress Management',
-                          medications: [],
-                          general_instructions: 'Mindfulness Practice & Journaling Routine',
-                          issued_at: new Date().toISOString(),
-                          doctor_signature: user.full_name,
-                          rx_number: `RX-${Math.floor(100000 + Math.random() * 900000)}`,
-                        })}
+                        onClick={() =>
+                          sendPrescription({
+                            id: `rx-${Date.now()}`,
+                            appointment_id: appt.id,
+                            patient_id: appt.patient_id || 'patient-1',
+                            patient_name: appt.patient_name,
+                            therapist_name: user.full_name,
+                            diagnosis: 'Anxiety & Stress Management',
+                            medications: [],
+                            general_instructions: 'Mindfulness Practice & Journaling Routine',
+                            issued_at: new Date().toISOString(),
+                            doctor_signature: user.full_name,
+                            rx_number: `RX-${Math.floor(100000 + Math.random() * 900000)}`,
+                          })
+                        }
                         className="flex-1 py-2 bg-sky-50 hover:bg-sky-100 border border-sky-200 text-sky-800 font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-colors"
                       >
                         <FileText className="w-3.5 h-3.5" /> Prescribe
                       </button>
                     </div>
 
-                    {/* Patient docs */}
                     {patientDocuments.length > 0 && (
                       <div className="space-y-1.5">
                         <p className="text-[10px] text-slate-500 font-bold uppercase">Uploaded Documents</p>
@@ -481,7 +538,6 @@ export const DoctorPortalView: React.FC<DoctorPortalViewProps> = ({ setActiveTab
             )}
           </div>
 
-          {/* Document preview modal */}
           {docPreviewUrl && (
             <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
               <div className="bg-white rounded-3xl p-6 max-w-lg w-full space-y-4 shadow-2xl">
@@ -499,161 +555,275 @@ export const DoctorPortalView: React.FC<DoctorPortalViewProps> = ({ setActiveTab
       )}
 
       {/* ══════════════════════════════════════════════════════════════
-          TAB 3 — AVAILABILITY SLOTS  (with inline editing)
+          TAB 3 — EASY CALENDAR DATE & TIME SLOT PICKER FOR DOCTORS
       ══════════════════════════════════════════════════════════════ */}
       {activeDoctorTab === 'slots' && (
         <div className="space-y-6">
           <div className="refreshing-card p-6 sm:p-8 space-y-6">
-            <div className="flex items-center justify-between">
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <h3 className="text-lg font-extrabold text-slate-900 flex items-center gap-2">
-                  <Clock className="w-5 h-5 text-emerald-600" /> Availability Slot Manager
-                </h3>
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-100 text-emerald-800 text-xs font-bold rounded-full mb-1 border border-emerald-300">
+                  <CalendarIcon className="w-3.5 h-3.5 text-emerald-700" /> Doctor Calendar Availability Picker
+                </div>
+                <h3 className="text-xl font-black text-slate-900">Manage Consultation Schedule</h3>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Add new open slots, or click the pencil icon to edit an existing slot's day and time.
+                  Pick a date from the calendar, select start time &amp; duration, and publish or batch add slots in 1 click.
                 </p>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold px-3 py-1 rounded-full bg-emerald-100 text-emerald-900 border border-emerald-300">
-                  {mySlots.filter(s => !s.is_booked).length} Open
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="text-xs font-extrabold px-3.5 py-1.5 rounded-full bg-emerald-100 text-emerald-900 border border-emerald-300">
+                  {mySlots.filter((s) => !s.is_booked).length} Open Slots
                 </span>
-                <span className="text-xs font-bold px-3 py-1 rounded-full bg-amber-100 text-amber-900 border border-amber-300">
-                  {mySlots.filter(s => s.is_booked).length} Booked
+                <span className="text-xs font-extrabold px-3.5 py-1.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300">
+                  {mySlots.filter((s) => s.is_booked).length} Booked
                 </span>
               </div>
             </div>
 
-            {/* ── Add new slot form ── */}
-            <form onSubmit={handleAddSlot} className="p-5 bg-gradient-to-r from-emerald-900 via-teal-900 to-slate-900 text-white rounded-2xl shadow-lg">
-              <p className="text-xs font-bold text-emerald-200 mb-3">+ Add New Availability Slot</p>
-              <div className="flex flex-wrap items-end gap-3">
-                <div className="flex-1 min-w-[140px]">
-                  <label className="text-[10px] font-semibold text-white/60 uppercase block mb-1">Day / Date</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. Tomorrow, Mon Aug 12"
-                    value={newDay}
-                    onChange={(e) => setNewDay(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-white/10 border border-white/20 text-white placeholder-white/40 rounded-xl text-xs focus:outline-none focus:border-white/50"
-                  />
+            {/* ── Easy Calendar Date & Time Slot Form ── */}
+            <div className="p-6 bg-gradient-to-br from-emerald-950 via-teal-900 to-slate-900 text-white rounded-3xl shadow-xl space-y-5 border border-white/10">
+              <div className="flex items-center justify-between">
+                <h4 className="text-sm font-extrabold text-emerald-200 flex items-center gap-2">
+                  <CalendarIcon className="w-4 h-4 text-emerald-400" /> Select Date &amp; Time from Calendar
+                </h4>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => handleBatchAddSlots('morning')}
+                    className="px-3 py-1.5 bg-emerald-500/30 hover:bg-emerald-500/50 text-emerald-200 text-[11px] font-extrabold rounded-xl border border-emerald-400/40 transition-colors flex items-center gap-1"
+                  >
+                    <Zap className="w-3.5 h-3.5 text-amber-300" /> + 3 Morning Slots (9, 10, 11 AM)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleBatchAddSlots('afternoon')}
+                    className="px-3 py-1.5 bg-teal-500/30 hover:bg-teal-500/50 text-teal-200 text-[11px] font-extrabold rounded-xl border border-teal-400/40 transition-colors flex items-center gap-1"
+                  >
+                    <Zap className="w-3.5 h-3.5 text-amber-300" /> + 3 Afternoon Slots (2, 3, 4 PM)
+                  </button>
                 </div>
-                <div className="flex-1 min-w-[180px]">
-                  <label className="text-[10px] font-semibold text-white/60 uppercase block mb-1">Time Range</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. 3:00 PM - 3:50 PM"
-                    value={newTime}
-                    onChange={(e) => setNewTime(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-white/10 border border-white/20 text-white placeholder-white/40 rounded-xl text-xs focus:outline-none focus:border-white/50"
-                  />
+              </div>
+
+              <form onSubmit={handleAddSlotFromCalendar} className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  {/* 1. Date Picker */}
+                  <div>
+                    <label className="text-[11px] font-extrabold text-emerald-200 uppercase tracking-wider block mb-1.5">
+                      1. Select Date (Calendar)
+                    </label>
+                    <input
+                      type="date"
+                      required
+                      min={getTodayIsoString()}
+                      value={slotDateInput}
+                      onChange={(e) => setSlotDateInput(e.target.value)}
+                      className="w-full px-4 py-2.5 bg-white/10 border border-white/20 text-white rounded-xl text-xs font-bold focus:outline-none focus:border-emerald-400 color-scheme-dark"
+                    />
+                    <span className="text-[10px] text-emerald-300/80 mt-1 block font-medium">
+                      Formatted: <strong>{formatDayLabelFromDate(slotDateInput)}</strong>
+                    </span>
+                  </div>
+
+                  {/* 2. Start Time Picker */}
+                  <div>
+                    <label className="text-[11px] font-extrabold text-emerald-200 uppercase tracking-wider block mb-1.5">
+                      2. Start Time
+                    </label>
+                    <input
+                      type="time"
+                      required
+                      value={slotTimeInput}
+                      onChange={(e) => setSlotTimeInput(e.target.value)}
+                      className="w-full px-4 py-2.5 bg-white/10 border border-white/20 text-white rounded-xl text-xs font-bold focus:outline-none focus:border-emerald-400"
+                    />
+                    <span className="text-[10px] text-emerald-300/80 mt-1 block font-medium">
+                      Slot: <strong>{formatTimeRangeFromStart(slotTimeInput, slotDurationMins)}</strong>
+                    </span>
+                  </div>
+
+                  {/* 3. Duration */}
+                  <div>
+                    <label className="text-[11px] font-extrabold text-emerald-200 uppercase tracking-wider block mb-1.5">
+                      3. Duration
+                    </label>
+                    <select
+                      value={slotDurationMins}
+                      onChange={(e) => setSlotDurationMins(Number(e.target.value))}
+                      className="w-full px-4 py-2.5 bg-slate-900 border border-white/20 text-white rounded-xl text-xs font-bold focus:outline-none focus:border-emerald-400"
+                    >
+                      <option value={30}>30 Minutes</option>
+                      <option value={50}>50 Minutes (Standard)</option>
+                      <option value={60}>60 Minutes (Comprehensive)</option>
+                    </select>
+                    <span className="text-[10px] text-emerald-300/80 mt-1 block font-medium">
+                      Session length for patient
+                    </span>
+                  </div>
                 </div>
+
+                {/* Quick Date Pills Shortcuts */}
+                <div className="flex items-center gap-2 flex-wrap pt-1">
+                  <span className="text-[11px] text-emerald-200/80 font-bold">Quick Date Presets:</span>
+                  {[
+                    { label: 'Today', val: getTodayIsoString() },
+                    { label: 'Tomorrow', val: getTomorrowIsoString() },
+                  ].map((preset) => (
+                    <button
+                      key={preset.label}
+                      type="button"
+                      onClick={() => setSlotDateInput(preset.val)}
+                      className={`px-3 py-1 text-[11px] font-bold rounded-full border transition-all ${
+                        slotDateInput === preset.val
+                          ? 'bg-emerald-400 text-slate-950 border-emerald-300 shadow'
+                          : 'bg-white/10 text-white/80 border-white/20 hover:bg-white/20'
+                      }`}
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
+
                 <button
                   type="submit"
-                  className="px-5 py-2.5 bg-white text-emerald-950 font-extrabold text-xs rounded-xl flex items-center gap-1.5 hover:bg-emerald-50 transition-colors shrink-0"
+                  className="w-full py-3 bg-emerald-400 hover:bg-emerald-300 text-slate-950 font-black text-xs rounded-xl shadow-md flex items-center justify-center gap-2 transition-all"
                 >
-                  <Plus className="w-4 h-4 text-emerald-700" /> Publish Slot
+                  <Plus className="w-4 h-4" /> Publish Available Slot ({formatDayLabelFromDate(slotDateInput)} @ {formatTimeRangeFromStart(slotTimeInput, slotDurationMins)})
                 </button>
-              </div>
-            </form>
+              </form>
+            </div>
 
-            {/* ── Slots grid ── */}
-            {mySlots.length === 0 ? (
-              <div className="text-center py-10 text-slate-400 text-xs border-2 border-dashed border-slate-200 rounded-2xl">
-                No slots added yet. Use the form above to publish your first availability slot.
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {mySlots.map((slot) => (
-                  <div
-                    key={slot.id}
-                    className={`p-4 rounded-2xl border transition-all ${
-                      slot.is_booked
-                        ? 'bg-amber-50/60 border-amber-200'
-                        : 'bg-white border-slate-200 shadow-sm hover:shadow-md'
-                    }`}
-                  >
-                    {editingSlotId === slot.id ? (
-                      /* ── Inline edit mode ── */
-                      <div className="space-y-2.5">
-                        <p className="text-[10px] font-extrabold text-emerald-700 uppercase tracking-wider">Editing Slot</p>
-                        <div>
-                          <label className="text-[10px] text-slate-500 font-semibold block mb-1">Day / Date</label>
-                          <input
-                            type="text"
-                            value={editDay}
-                            onChange={(e) => setEditDay(e.target.value)}
-                            className="w-full px-3 py-2 border border-emerald-300 bg-emerald-50 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:border-emerald-500"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-[10px] text-slate-500 font-semibold block mb-1">Time Range</label>
-                          <input
-                            type="text"
-                            value={editTime}
-                            onChange={(e) => setEditTime(e.target.value)}
-                            className="w-full px-3 py-2 border border-emerald-300 bg-emerald-50 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:border-emerald-500"
-                          />
-                        </div>
-                        <div className="flex gap-2 pt-1">
-                          <button
-                            onClick={() => handleSaveEdit(slot.id)}
-                            className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-colors"
-                          >
-                            <Check className="w-3.5 h-3.5" /> Save
-                          </button>
-                          <button
-                            onClick={handleCancelEdit}
-                            className="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-colors"
-                          >
-                            <X className="w-3.5 h-3.5" /> Cancel
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      /* ── View mode ── */
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0">
-                          <p className="text-xs font-extrabold text-slate-900 truncate">{slot.day_label}</p>
-                          <p className="text-xs text-slate-600 font-medium mt-0.5 truncate">{slot.time_label}</p>
-                          <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full inline-block mt-1.5 ${
-                            slot.is_booked
-                              ? 'bg-amber-100 text-amber-900'
-                              : 'bg-emerald-100 text-emerald-800'
-                          }`}>
-                            {slot.is_booked ? '🔒 Booked' : '✅ Open'}
-                          </span>
-                        </div>
-                        <div className="flex flex-col gap-1 shrink-0">
-                          {!slot.is_booked && (
+            {/* ── Active Slots Grid with Calendar Slot Editor ── */}
+            <div className="space-y-4">
+              <h4 className="text-sm font-extrabold text-slate-900 flex items-center justify-between">
+                <span>Published Consultation Slots ({mySlots.length})</span>
+                <span className="text-xs text-slate-500 font-normal">Click pencil ✏️ to edit any slot</span>
+              </h4>
+
+              {mySlots.length === 0 ? (
+                <div className="text-center py-12 text-slate-400 text-xs border-2 border-dashed border-slate-200 rounded-3xl space-y-2">
+                  <CalendarIcon className="w-8 h-8 text-slate-300 mx-auto" />
+                  <p>No availability slots created yet.</p>
+                  <p className="text-[11px] text-slate-400 font-medium">Use the Calendar Picker above to add open dates &amp; times for patient booking.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {mySlots.map((slot) => (
+                    <div
+                      key={slot.id}
+                      className={`p-4 rounded-2xl border transition-all ${
+                        slot.is_booked
+                          ? 'bg-amber-50/60 border-amber-200'
+                          : 'bg-white border-slate-200 shadow-sm hover:shadow-md'
+                      }`}
+                    >
+                      {editingSlotId === slot.id ? (
+                        /* ── Inline Calendar Slot Editor ── */
+                        <div className="space-y-3 p-1">
+                          <p className="text-[11px] font-extrabold text-emerald-700 uppercase tracking-wider flex items-center gap-1">
+                            <Pencil className="w-3.5 h-3.5" /> Edit Slot via Calendar
+                          </p>
+                          <div>
+                            <label className="text-[10px] text-slate-500 font-bold block mb-1">Select Date</label>
+                            <input
+                              type="date"
+                              min={getTodayIsoString()}
+                              value={editDateInput}
+                              onChange={(e) => setEditDateInput(e.target.value)}
+                              className="w-full px-3 py-1.5 border border-emerald-300 bg-emerald-50 rounded-xl text-xs font-bold text-slate-900 focus:outline-none"
+                            />
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <label className="text-[10px] text-slate-500 font-bold block mb-1">Start Time</label>
+                              <input
+                                type="time"
+                                value={editTimeInput}
+                                onChange={(e) => setEditTimeInput(e.target.value)}
+                                className="w-full px-3 py-1.5 border border-emerald-300 bg-emerald-50 rounded-xl text-xs font-bold text-slate-900 focus:outline-none"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-[10px] text-slate-500 font-bold block mb-1">Duration</label>
+                              <select
+                                value={editDurationMins}
+                                onChange={(e) => setEditDurationMins(Number(e.target.value))}
+                                className="w-full px-2 py-1.5 border border-emerald-300 bg-emerald-50 rounded-xl text-xs font-bold text-slate-900 focus:outline-none"
+                              >
+                                <option value={30}>30m</option>
+                                <option value={50}>50m</option>
+                                <option value={60}>60m</option>
+                              </select>
+                            </div>
+                          </div>
+                          <p className="text-[10px] text-emerald-800 font-semibold">
+                            New: {formatDayLabelFromDate(editDateInput)} ({formatTimeRangeFromStart(editTimeInput, editDurationMins)})
+                          </p>
+                          <div className="flex gap-2 pt-1">
                             <button
-                              onClick={() => handleStartEdit(slot)}
-                              className="p-2 rounded-xl text-slate-500 hover:text-sky-600 hover:bg-sky-50 transition-colors"
-                              title="Edit slot"
+                              onClick={() => handleSaveEdit(slot.id)}
+                              className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1 transition-colors"
                             >
-                              <Pencil className="w-3.5 h-3.5" />
+                              <Check className="w-3.5 h-3.5" /> Save
                             </button>
-                          )}
-                          <button
-                            disabled={slot.is_booked}
-                            onClick={() => removeSlot(slot.id)}
-                            className={`p-2 rounded-xl transition-colors ${
-                              slot.is_booked
-                                ? 'text-slate-300 cursor-not-allowed'
-                                : 'text-rose-500 hover:bg-rose-50'
-                            }`}
-                            title={slot.is_booked ? 'Cannot remove a booked slot' : 'Delete slot'}
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                            <button
+                              onClick={handleCancelEdit}
+                              className="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl flex items-center justify-center gap-1 transition-colors"
+                            >
+                              <X className="w-3.5 h-3.5" /> Cancel
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
+                      ) : (
+                        /* ── Slot View Mode ── */
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1 text-slate-900 font-extrabold text-xs">
+                              <CalendarIcon className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                              <span className="truncate">{slot.day_label}</span>
+                            </div>
+                            <div className="flex items-center gap-1 text-slate-600 font-medium text-xs mt-1">
+                              <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                              <span className="truncate">{slot.time_label}</span>
+                            </div>
+                            <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full inline-block mt-2 ${
+                              slot.is_booked
+                                ? 'bg-amber-100 text-amber-900 border border-amber-200'
+                                : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                            }`}>
+                              {slot.is_booked ? '🔒 Booked by Patient' : '✅ Open for Booking'}
+                            </span>
+                          </div>
+                          <div className="flex flex-col gap-1 shrink-0">
+                            {!slot.is_booked && (
+                              <button
+                                onClick={() => handleStartEdit(slot)}
+                                className="p-2 rounded-xl text-slate-500 hover:text-sky-600 hover:bg-sky-50 transition-colors"
+                                title="Edit slot date/time via Calendar"
+                              >
+                                <Pencil className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                            <button
+                              disabled={slot.is_booked}
+                              onClick={() => removeSlot(slot.id)}
+                              className={`p-2 rounded-xl transition-colors ${
+                                slot.is_booked
+                                  ? 'text-slate-300 cursor-not-allowed'
+                                  : 'text-rose-500 hover:bg-rose-50'
+                              }`}
+                              title={slot.is_booked ? 'Cannot remove a booked slot' : 'Delete slot'}
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -667,14 +837,14 @@ export const DoctorPortalView: React.FC<DoctorPortalViewProps> = ({ setActiveTab
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-lg font-extrabold text-slate-900 flex items-center gap-2">
-                  <IndianRupee className="w-5 h-5 text-emerald-600" /> Session Rates & Types
+                  <IndianRupee className="w-5 h-5 text-emerald-600" /> Session Rates &amp; Types
                 </h3>
                 <p className="text-xs text-slate-500 mt-0.5">
                   Configure the session durations and fee schedule patients see when booking.
                 </p>
               </div>
               <span className="text-xs font-extrabold text-sky-900 bg-sky-100 px-3 py-1 rounded-full border border-sky-300">
-                {mySessionTypes.filter(st => st.is_active).length} Active Types
+                {mySessionTypes.filter((st) => st.is_active).length} Active Types
               </span>
             </div>
 
@@ -750,6 +920,7 @@ export const DoctorPortalView: React.FC<DoctorPortalViewProps> = ({ setActiveTab
                     </div>
 
                     <button
+                      type="button"
                       onClick={() => toggleSessionType(st.id)}
                       className={`px-3.5 py-2 rounded-xl font-extrabold text-xs transition-all border flex items-center gap-1.5 ${
                         st.is_active

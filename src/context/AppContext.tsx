@@ -17,6 +17,7 @@ import {
   SessionType,
 } from '@/lib/types';
 import {
+  INITIAL_COUNSELORS,
   SEEDED_ADMIN,
   DEFAULT_PATIENT,
   INITIAL_SLOTS,
@@ -141,11 +142,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [usersList, setUsersList] = useState<UserProfile[]>(() => {
     const saved = getSavedState();
+    const defaultList = [SEEDED_ADMIN, ...INITIAL_COUNSELORS];
     if (saved?.usersList && Array.isArray(saved.usersList) && saved.usersList.length > 0) {
-      const hasAdmin = saved.usersList.some((u: UserProfile) => u.email === SEEDED_ADMIN.email);
-      return hasAdmin ? saved.usersList : [SEEDED_ADMIN, ...saved.usersList];
+      const existingIds = new Set(saved.usersList.map((u: UserProfile) => u.id));
+      const missingCounselors = INITIAL_COUNSELORS.filter((c) => !existingIds.has(c.id));
+      return [...saved.usersList, ...missingCounselors];
     }
-    return [SEEDED_ADMIN];
+    return defaultList;
   });
   
   const [authError, setAuthError] = useState<string | null>(null);
