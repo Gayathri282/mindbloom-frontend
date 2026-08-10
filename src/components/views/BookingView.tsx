@@ -167,6 +167,14 @@ export const BookingView: React.FC<BookingViewProps> = ({ setActiveTab }) => {
           },
         ];
 
+  const getCounselorStartingPrice = (counselorId: string, defaultPrice?: number) => {
+    const types = sessionTypes.filter((st) => (st.counselor_id === counselorId || st.counselor_id === 'therapist-1') && st.is_active && st.price > 0);
+    if (types.length > 0) {
+      return Math.min(...types.map((st) => st.price));
+    }
+    return defaultPrice || 750;
+  };
+
   const selectedSessionTypeObj =
     counselorSessionTypes.find((st) => st.id === selectedSessionTypeId) ||
     counselorSessionTypes[0];
@@ -204,7 +212,7 @@ export const BookingView: React.FC<BookingViewProps> = ({ setActiveTab }) => {
   const counselorSlots = openSlots.length > 0 ? openSlots : (specificSlots.length > 0 ? specificSlots : slots.filter((s) => !s.is_booked));
   const selectedSlotObj = counselorSlots.find((s) => s.id === selectedSlotId) || counselorSlots[0];
 
-  const currentPrice = selectedSessionTypeObj.price || 499;
+  const currentPrice = selectedSessionTypeObj?.price || 750;
 
   // Step 1: Browse Profile, Step 2: Dedicated Slot Selection Screen
   const [bookingStep, setBookingStep] = useState<'browse' | 'select_slot'>('browse');
@@ -498,7 +506,7 @@ export const BookingView: React.FC<BookingViewProps> = ({ setActiveTab }) => {
 
                     <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
                       <span className="text-xs text-slate-500 font-semibold">
-                        From <span className="font-extrabold text-slate-900 text-sm">₹{counselor.starting_price || 499}</span>
+                        From <span className="font-extrabold text-slate-900 text-sm">₹{getCounselorStartingPrice(counselor.id, counselor.starting_price)}</span>
                       </span>
 
                       {user.role !== 'admin' ? (

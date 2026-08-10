@@ -155,7 +155,7 @@ export const BookingConfirmationView: React.FC<BookingConfirmationViewProps> = (
               </div>
               <div>
                 <span className="text-slate-500 font-semibold block text-[10px] uppercase">Amount Paid:</span>
-                <span className="font-bold text-emerald-700 text-sm">₹{statusDetails?.amount_paid || 499}</span>
+                <span className="font-bold text-emerald-700 text-sm">₹{statusDetails?.amount_paid || 750}</span>
               </div>
               <div>
                 <span className="text-slate-500 font-semibold block text-[10px] uppercase">Payment Reference:</span>

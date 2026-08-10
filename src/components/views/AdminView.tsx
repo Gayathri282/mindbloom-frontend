@@ -525,7 +525,7 @@ export const AdminView: React.FC = () => {
                     </div>
                     <div>
                       <span className="text-[10px] text-emerald-800 font-bold block">Starting Rate:</span>
-                      <span className="font-bold text-emerald-800">₹{inspectUser.starting_price || 499}</span>
+                      <span className="font-bold text-emerald-800">₹{inspectUser.starting_price || 750}</span>
                     </div>
                   </div>
                 </div>
