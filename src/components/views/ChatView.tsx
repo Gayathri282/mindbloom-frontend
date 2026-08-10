@@ -49,7 +49,7 @@ export const ChatView: React.FC = () => {
   );
 
   const [selectedCounselorId, setSelectedCounselorId] = useState<string>(
-    bookedCounselorIds[0] || approvedCounselors[0]?.id || 'therapist-1'
+    bookedCounselorIds[0] || approvedCounselors[0]?.id || ''
   );
 
   const selectedCounselorObj =
@@ -58,7 +58,7 @@ export const ChatView: React.FC = () => {
   // Scoped unlocked check per counselor: unlocked if patient has booked with THIS specific counselor
   const isCounselorChatUnlocked = appointments.some(
     (a) =>
-      (a.patient_id === user.id || a.patient_id === 'patient-1') &&
+      a.patient_id === user.id &&
       a.therapist_id === selectedCounselorId
   );
 
@@ -66,8 +66,7 @@ export const ChatView: React.FC = () => {
   const scopedTherapistMessages = therapistMessages.filter(
     (m) =>
       (m.sender_id === selectedCounselorId && m.receiver_id === user.id) ||
-      (m.sender_id === user.id && m.receiver_id === selectedCounselorId) ||
-      (!m.receiver_id && selectedCounselorId === 'therapist-1')
+      (m.sender_id === user.id && m.receiver_id === selectedCounselorId)
   );
 
   const scrollToBottom = () => {

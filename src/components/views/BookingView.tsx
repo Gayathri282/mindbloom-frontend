@@ -54,7 +54,7 @@ export const BookingView: React.FC<BookingViewProps> = ({ setActiveTab }) => {
   const [selectedSpecialtyFilter, setSelectedSpecialtyFilter] = useState<string>('All Specialties');
 
   // Multi-Counselor Selection State
-  const [selectedCounselorId, setSelectedCounselorId] = useState<string | null>('therapist-1');
+  const [selectedCounselorId, setSelectedCounselorId] = useState<string | null>(null);
   const [selectedSessionTypeId, setSelectedSessionTypeId] = useState<string | null>(null);
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
 

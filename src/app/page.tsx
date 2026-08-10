@@ -43,20 +43,6 @@ function MindBloomApp() {
     }
   }, [activeTab]);
 
-  // Keep admin & doctor views aligned with active role
-  useEffect(() => {
-    if (user.role === 'admin' && activeTab !== 'admin' && activeTab !== 'chat') {
-      setActiveTab('admin');
-    } else if (
-      (user.role === 'therapist' || user.role === 'counselor') &&
-      activeTab !== 'video_call' &&
-      activeTab !== 'chat' &&
-      activeTab !== 'careplan'
-    ) {
-      setActiveTab('doctor_portal');
-    }
-  }, [user.role, user.status]);
-
   const handleIncomingCallAccept = () => {
     setActiveTab('video_call');
   };

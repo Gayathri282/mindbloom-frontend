@@ -139,10 +139,10 @@ export const DoctorPortalView: React.FC<DoctorPortalViewProps> = ({ setActiveTab
   const [replyText, setReplyText] = useState('');
 
   const mySessionTypes = sessionTypes.filter(
-    (st) => st.counselor_id === user.id || st.counselor_id === 'therapist-1'
+    (st) => st.counselor_id === user.id || (user.email && st.counselor_id === user.email)
   );
   const mySlots = slots.filter(
-    (s) => s.therapist_id === user.id || s.therapist_id === 'therapist-1'
+    (s) => s.therapist_id === user.id || (user.email && s.therapist_email === user.email)
   );
 
   const unresolvedCrisisCount = crisisLogs.filter((l) => !l.resolved).length;

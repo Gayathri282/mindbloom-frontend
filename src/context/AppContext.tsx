@@ -142,13 +142,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [usersList, setUsersList] = useState<UserProfile[]>(() => {
     const saved = getSavedState();
-    const defaultList = [SEEDED_ADMIN, ...INITIAL_COUNSELORS];
+    const demoCounselorIds = new Set(['therapist-1', 'therapist-2', 'therapist-3']);
     if (saved?.usersList && Array.isArray(saved.usersList) && saved.usersList.length > 0) {
-      const existingIds = new Set(saved.usersList.map((u: UserProfile) => u.id));
-      const missingCounselors = INITIAL_COUNSELORS.filter((c) => !existingIds.has(c.id));
-      return [...saved.usersList, ...missingCounselors];
+      return saved.usersList.filter((u: UserProfile) => !demoCounselorIds.has(u.id));
     }
-    return defaultList;
+    return [SEEDED_ADMIN];
   });
   
   const [authError, setAuthError] = useState<string | null>(null);
@@ -229,6 +227,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     ];
   });
 
+  // Deleted Slots Tracking
+  const [deletedSlotIds, setDeletedSlotIds] = useState<string[]>(() => {
+    const saved = getSavedState();
+    return saved?.deletedSlotIds || [];
+  });
+
   // Save session state to localStorage on any state modification
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -241,6 +245,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           counselorApplications,
           appointments,
           slots,
+          deletedSlotIds,
           carePlan,
           communityPosts,
           sessionTypes,
@@ -249,7 +254,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     } catch (e) {
       console.warn('Error writing session state to localStorage:', e);
     }
-  }, [user, usersList, counselorApplications, appointments, slots, carePlan, communityPosts, sessionTypes]);
+  }, [user, usersList, counselorApplications, appointments, slots, deletedSlotIds, carePlan, communityPosts, sessionTypes]);
 
   // Fetch counselor applications from backend (shared function used on mount and by admin refresh)
   const refreshCounselorApplications = async () => {
@@ -322,12 +327,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const data = await res.json();
         if (Array.isArray(data.slots)) {
           setSlots((prev) => {
+            const deletedSet = new Set(deletedSlotIds);
             const map = new Map<string, AvailabilitySlot>();
-            INITIAL_SLOTS.forEach((s) => map.set(s.id, s));
-            data.slots.forEach((s: AvailabilitySlot) => map.set(s.id, s));
-            prev.forEach((s) => {
-              if (!map.has(s.id)) map.set(s.id, s);
+
+            // 1. Authoritative backend slots (excluding deleted ones)
+            data.slots.forEach((s: AvailabilitySlot) => {
+              if (!deletedSet.has(s.id)) map.set(s.id, s);
             });
+
+            // 2. Local-only slots (excluding deleted ones)
+            prev.forEach((s) => {
+              if (!deletedSet.has(s.id) && !map.has(s.id)) {
+                map.set(s.id, s);
+              }
+            });
+
             return Array.from(map.values());
           });
         }
@@ -694,13 +708,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       alert('Cannot remove an availability slot that is already booked by a patient!');
       return false;
     }
+
+    setDeletedSlotIds((prev) => Array.from(new Set([...prev, slotId])));
     setSlots((prev) => prev.filter((s) => s.id !== slotId));
 
     try {
       const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
-      await fetch(`${backendUrl}/slots/${slotId}`, {
+      const response = await fetch(`${backendUrl}/slots/${slotId}`, {
         method: 'DELETE',
       });
+      if (!response.ok) {
+        console.error(`Backend DELETE /api/slots/${slotId} failed with HTTP status ${response.status}`);
+      } else {
+        console.log(`Backend DELETE /api/slots/${slotId} verified successful.`);
+      }
       refreshSlots();
     } catch (e) {
       console.warn('Backend slot delete notice:', e);
