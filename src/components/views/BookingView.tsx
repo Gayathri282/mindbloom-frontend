@@ -171,7 +171,13 @@ export const BookingView: React.FC<BookingViewProps> = ({ setActiveTab }) => {
     counselorSessionTypes.find((st) => st.id === selectedSessionTypeId) ||
     counselorSessionTypes[0];
 
-  const specificSlots = slots.filter((s) => s.therapist_id === selectedCounselor?.id);
+  const specificSlots = slots.filter(
+    (s) =>
+      s.therapist_id === selectedCounselor?.id ||
+      (selectedCounselor?.email && s.therapist_id === selectedCounselor.email) ||
+      (selectedCounselor?.id === 'therapist-1' && (s.therapist_id === 'therapist-1' || s.therapist_id?.startsWith('counselor-') || s.therapist_id === user.id))
+  );
+
   const counselorSlots = specificSlots.length > 0 ? specificSlots : slots.filter((s) => !s.is_booked);
   const selectedSlotObj = counselorSlots.find((s) => s.id === selectedSlotId) || counselorSlots[0];
 
@@ -621,70 +627,6 @@ export const BookingView: React.FC<BookingViewProps> = ({ setActiveTab }) => {
               })}
             </div>
           </div>
-
-          {/* Selected Counselor Full Profile Showcase & Step 2 CTA Button */}
-          {selectedCounselor && (
-            <div className="refreshing-card p-6 sm:p-8 space-y-6 animate-fadeIn">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5 border-b border-slate-100 pb-6">
-                <div className="flex items-center gap-4">
-                  <UserAvatar name={selectedCounselor.full_name} avatarUrl={selectedCounselor.avatar_url} size="xl" />
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-xl font-extrabold text-slate-900">{selectedCounselor.full_name}</h3>
-                      <span className="px-2.5 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-extrabold rounded-full border border-emerald-300">
-                        Verified Active Practitioner
-                      </span>
-                    </div>
-                    <p className="text-xs text-slate-600 font-semibold mt-0.5">
-                      {selectedCounselor.credentials} • {selectedCounselor.years_of_experience || 8} Years Practice
-                    </p>
-                    <div className="flex flex-wrap gap-1.5 mt-2">
-                      {(selectedCounselor.languages || ['English', 'Hindi']).map((lang, idx) => (
-                        <span key={idx} className="text-[11px] font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md">
-                          🗣️ {lang}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                {user.role !== 'admin' && (
-                  <button
-                    onClick={() => {
-                      setBookingStep('select_slot');
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
-                    }}
-                    className="px-6 py-3 blue-gradient-btn text-white font-extrabold text-xs rounded-2xl shadow-lg flex items-center gap-2 transition-all hover:scale-105"
-                  >
-                    <CalendarIcon className="w-4 h-4 text-sky-200" />
-                    Select a Time & Book Session &rarr;
-                  </button>
-                )}
-              </div>
-
-              <div>
-                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Clinical Bio & Approach:</h4>
-                <p className="text-xs text-slate-700 leading-relaxed bg-slate-50 p-4 rounded-2xl border border-slate-100 italic">
-                  &quot;{selectedCounselor.bio}&quot;
-                </p>
-              </div>
-
-              <div>
-                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Offered Consultation Rates:</h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {counselorSessionTypes.map((st) => (
-                    <div key={st.id} className="p-4 bg-sky-50/60 rounded-2xl border border-sky-200/80 flex items-center justify-between">
-                      <div>
-                        <span className="text-xs font-extrabold text-slate-900 block">{st.label}</span>
-                        <span className="text-[10px] text-sky-800 font-bold">{st.duration_minutes} Minutes Encrypted Session</span>
-                      </div>
-                      <span className="text-base font-black text-emerald-700">₹{st.price}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       )}
 

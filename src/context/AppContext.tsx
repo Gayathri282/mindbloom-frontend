@@ -610,13 +610,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Availability Slots
   const addSlot = (dayLabel: string, timeLabel: string) => {
+    const counselorId = (user.role === 'admin' || user.id === 'admin-1') ? 'therapist-1' : user.id;
     const newSlot: AvailabilitySlot = {
-      id: `slot-${Date.now()}`,
-      therapist_id: user.id,
+      id: `slot-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      therapist_id: counselorId,
       start_time: new Date().toISOString(),
       end_time: new Date(Date.now() + 50 * 60 * 1000).toISOString(),
       is_booked: false,
-      day_label: dayLabel || 'Upcoming',
+      day_label: dayLabel || 'Today',
       time_label: timeLabel || '11:00 AM - 11:50 AM',
     };
     setSlots((prev) => [...prev, newSlot]);
