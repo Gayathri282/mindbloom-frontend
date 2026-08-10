@@ -68,6 +68,7 @@ export interface Appointment {
   id: string;
   patient_id: string;
   patient_name: string;
+  patient_email?: string;
   patient_avatar?: string;
   therapist_id: string;
   therapist_name: string;

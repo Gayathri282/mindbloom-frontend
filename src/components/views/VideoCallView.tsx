@@ -19,7 +19,7 @@ import {
   Send,
 } from 'lucide-react';
 
-export const VideoCallView: React.FC = () => {
+export const VideoCallView: React.FC<{ setActiveTab?: (tab: string) => void }> = ({ setActiveTab }) => {
   const {
     user,
     activeSession,
@@ -36,6 +36,7 @@ export const VideoCallView: React.FC = () => {
     sendPrescription,
   } = useApp();
 
+  const [lastCreatedRx, setLastCreatedRx] = useState<any>(null);
   const [isMuted, setIsMuted] = useState(false);
   const [isCamOff, setIsCamOff] = useState(false);
   const [showSidePanel, setShowSidePanel] = useState(user.role === 'therapist');
@@ -96,6 +97,35 @@ export const VideoCallView: React.FC = () => {
     }
   };
 
+  const handleEndCall = async () => {
+    if (rtcManagerRef.current) {
+      rtcManagerRef.current.closeSession();
+    }
+
+    if (lastCreatedRx) {
+      try {
+        const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+        await fetch(`${backendUrl}/prescriptions/send-email`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            prescription: lastCreatedRx,
+            patientEmail: currentAppt?.patient_email || 'patient@mindbloom.app',
+            patientName: currentAppt?.patient_name || 'Maya Lin',
+          }),
+        });
+      } catch (e) {
+        console.warn('Prescription email dispatch notice:', e);
+      }
+    }
+
+    await endActiveSession();
+    if (setActiveTab) {
+      const destination = (user.role === 'therapist' || user.role === 'counselor' || user.role === 'admin') ? 'doctor_portal' : 'home';
+      setActiveTab(destination);
+    }
+  };
+
   const handleDispatchPrescription = (e: React.FormEvent) => {
     e.preventDefault();
     if (!rxMedName.trim()) {
@@ -104,7 +134,7 @@ export const VideoCallView: React.FC = () => {
     }
 
     const rxNumber = `RX-${Math.floor(100000 + Math.random() * 900000)}`;
-    sendPrescription({
+    const newRx = {
       id: `rx-${Date.now()}`,
       appointment_id: currentAppt?.id,
       patient_id: currentAppt?.patient_id || 'patient-1',
@@ -129,9 +159,12 @@ export const VideoCallView: React.FC = () => {
       }),
       doctor_signature: `${user.full_name || 'Dr. Sarah Jenkins'}, Psy.D. • Lic #PSY-98241`,
       rx_number: rxNumber,
-    });
+    };
 
-    alert(`Prescription #${rxNumber} sent directly to patient chat!`);
+    setLastCreatedRx(newRx);
+    sendPrescription(newRx);
+
+    alert(`Prescription #${rxNumber} saved to patient records! It will be emailed automatically to the patient when the session ends.`);
   };
 
   return (
@@ -266,7 +299,7 @@ export const VideoCallView: React.FC = () => {
               </button>
 
               <button
-                onClick={endActiveSession}
+                onClick={handleEndCall}
                 className="px-5 py-3 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow-lg flex items-center gap-2 transition-all"
               >
                 <PhoneOff className="w-4 h-4" /> End Call

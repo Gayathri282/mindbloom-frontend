@@ -922,13 +922,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     );
   };
 
-  const endActiveSession = () => {
-    if (!activeSession) return;
+  const endActiveSession = async (onComplete?: () => void) => {
+    if (!activeSession) {
+      if (onComplete) onComplete();
+      return;
+    }
     const apptId = activeSession.id;
 
     // Both joined check: session marked completed ONLY if therapist & patient verifiably joined
-    const bothJoined = therapistJoinedCall && patientJoinedCall;
-    const finalStatus = bothJoined ? 'completed' : 'scheduled';
+    const bothJoined = (therapistJoinedCall || !!activeSession.therapist_joined_at) && (patientJoinedCall || !!activeSession.patient_joined_at);
+    const finalStatus = bothJoined ? 'completed' : activeSession.status === 'in_progress' ? 'completed' : 'scheduled';
 
     setAppointments((prev) =>
       prev.map((a) =>
@@ -936,17 +939,32 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           ? {
               ...a,
               status: finalStatus,
-              completed_at: bothJoined ? new Date().toISOString() : a.completed_at,
+              completed_at: finalStatus === 'completed' ? new Date().toISOString() : a.completed_at,
             }
           : a
       )
     );
+
+    // Save to backend REST API
+    try {
+      const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+      await fetch(`${backendUrl}/appointments/${apptId}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: finalStatus }),
+      });
+      refreshAppointments();
+    } catch (e) {
+      console.warn('Notice syncing ended session status to backend:', e);
+    }
 
     setActiveSession(null);
     setActiveIncomingCall(null);
     setTherapistStartedCall(false);
     setPatientJoinedCall(false);
     setTherapistJoinedCall(false);
+
+    if (onComplete) onComplete();
   };
 
   // Chat

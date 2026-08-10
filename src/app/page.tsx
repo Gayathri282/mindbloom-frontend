@@ -90,7 +90,7 @@ function MindBloomApp() {
         {activeTab === 'booking_confirmation' && (
           <BookingConfirmationView appointmentId={null} setActiveTab={setActiveTab} />
         )}
-        {activeTab === 'video_call' && <VideoCallView />}
+        {activeTab === 'video_call' && <VideoCallView setActiveTab={setActiveTab} />}
         {activeTab === 'chat' && <ChatView />}
         {activeTab === 'careplan' && <CarePlanView />}
         {activeTab === 'mindfulness' && <MindfulnessView />}

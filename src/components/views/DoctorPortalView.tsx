@@ -368,15 +368,15 @@ export const DoctorPortalView: React.FC<DoctorPortalViewProps> = ({ setActiveTab
                       </div>
 
                       <div className="flex flex-col sm:items-end gap-2 shrink-0">
-                        {appt.status !== 'completed' && (
+                        {appt.status !== 'completed' && appt.status !== 'missed' && (
                           <button
                             onClick={() => {
                               startDoctorCall(appt.id);
                               setActiveTab('video_call');
                             }}
-                            className="px-4 py-2.5 emerald-gradient-btn text-white font-bold text-xs rounded-xl flex items-center gap-2"
+                            className="px-5 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-xs rounded-xl shadow-lg flex items-center gap-2 transition-all hover:scale-[1.02] active:scale-[0.98]"
                           >
-                            <Video className="w-4 h-4" /> Start Video Call
+                            <Video className="w-4 h-4 text-emerald-200 animate-pulse" /> Start &amp; Join Session
                           </button>
                         )}
                         <button
