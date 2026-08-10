@@ -374,21 +374,47 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  // Fetch authoritative appointments from backend
+  const refreshAppointments = async () => {
+    try {
+      const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+      const res = await fetch(`${backendUrl}/appointments`);
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data.appointments)) {
+          setAppointments((prev) => {
+            const map = new Map<string, Appointment>();
+            data.appointments.forEach((a: Appointment) => map.set(a.id, a));
+            prev.forEach((a) => {
+              if (!map.has(a.id)) map.set(a.id, a);
+            });
+            return Array.from(map.values());
+          });
+        }
+      }
+    } catch (e) {
+      console.warn('Notice fetching backend appointments:', e);
+    }
+  };
+
   // Fetch on mount & poll every 3s + window focus for real-time slot propagation
   useEffect(() => {
     refreshCounselorApplications();
     refreshSlots();
     refreshSessionTypes();
+    refreshAppointments();
 
     const interval = setInterval(() => {
       refreshSlots();
       refreshSessionTypes();
+      refreshAppointments();
     }, 3000);
 
     const onFocus = () => {
       refreshSlots();
       refreshCounselorApplications();
       refreshSessionTypes();
+      refreshAppointments();
     };
     window.addEventListener('focus', onFocus);
 
@@ -804,6 +830,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
 
     setAppointments((prev) => [newAppt, ...prev]);
+
+    (async () => {
+      try {
+        const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+        await fetch(`${backendUrl}/appointments`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newAppt),
+        });
+        refreshAppointments();
+      } catch (e) {
+        console.warn('Backend appointment save notice:', e);
+      }
+    })();
+
     return true;
   };
 

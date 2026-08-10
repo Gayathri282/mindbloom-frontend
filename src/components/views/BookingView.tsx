@@ -258,138 +258,9 @@ export const BookingView: React.FC<BookingViewProps> = ({ setActiveTab }) => {
         throw new Error(data.error || 'Failed to generate Razorpay Payment Link');
       }
     } catch (err: any) {
-      console.warn('Backend payment link creation notice, generating dynamic test link:', err);
-      const mockRefId = `appt_ref_${Date.now()}`;
-      setGeneratedPaymentLink({
-        shortUrl: `https://rzp.io/i/mb_${Date.now().toString(36).substring(2, 9)}`,
-        paymentLinkId: `plink_${Date.now()}`,
-        appointmentId: mockRefId,
-        amount: currentPrice,
-        expiresAt: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
-      });
+      console.error('Error creating Razorpay Payment Link:', err);
+      setPaymentError(err.message || 'Unable to generate Razorpay Payment Link. Please try again.');
       setIsPaymentProcessing(false);
-    }
-  };
-
-  // Helper: Trigger verified webhook event payment_link.paid
-  const handleSimulateWebhookSuccess = async (appointmentId: string) => {
-    setIsPaymentProcessing(true);
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
-
-    try {
-      await fetch(`${backendUrl}/webhooks/razorpay`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Razorpay-Signature': 'test_mode_webhook_sig',
-        },
-        body: JSON.stringify({
-          event: 'payment_link.paid',
-          payload: {
-            payment_link: {
-              entity: {
-                id: generatedPaymentLink?.paymentLinkId || 'plink_test',
-                reference_id: appointmentId,
-                payment_id: `pay_wh_${Date.now()}`,
-                amount: currentPrice * 100,
-                status: 'paid',
-              },
-            },
-          },
-        }),
-      });
-
-      // Complete client appointment booking state
-      bookAppointment(selectedSlotId!, {
-        payment_id: `pay_wh_${Date.now()}`,
-        razorpay_order_id: appointmentId,
-        amount_paid: currentPrice,
-        payment_method: 'Razorpay Payment Link (Webhook Verified)',
-      });
-
-      setReceiptDetails({
-        paymentId: `pay_wh_${Date.now()}`,
-        orderId: appointmentId,
-        amount: currentPrice,
-        counselorName: selectedCounselor.full_name,
-        sessionLabel: selectedSessionTypeObj.label,
-        date: new Date().toLocaleString('en-IN', {
-          dateStyle: 'medium',
-          timeStyle: 'short',
-        }),
-      });
-
-      setBookingSuccess(true);
-      setIsPaymentProcessing(false);
-
-      setTimeout(() => {
-        setBookingSuccess(false);
-        setGeneratedPaymentLink(null);
-        setSelectedSlotId(null);
-        setActiveTab('booking_confirmation');
-      }, 2500);
-    } catch (err) {
-      console.error('Webhook simulation notice:', err);
-      setIsPaymentProcessing(false);
-    }
-  };
-
-  // Helper: Trigger webhook event payment.failed
-  const handleSimulateWebhookFailure = async (appointmentId: string) => {
-    setIsPaymentProcessing(true);
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
-
-    try {
-      await fetch(`${backendUrl}/webhooks/razorpay`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Razorpay-Signature': 'test_mode_webhook_sig',
-        },
-        body: JSON.stringify({
-          event: 'payment.failed',
-          payload: {
-            payment_link: {
-              entity: {
-                reference_id: appointmentId,
-                status: 'failed',
-              },
-            },
-          },
-        }),
-      });
-
-      setPaymentError('Razorpay Webhook recorded payment failure. Slot released.');
-      setIsPaymentProcessing(false);
-      setGeneratedPaymentLink(null);
-    } catch (err) {
-      setIsPaymentProcessing(false);
-    }
-  };
-
-  // Helper: Test tampered signature rejection
-  const handleTestTamperedSignature = async () => {
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
-
-    try {
-      const res = await fetch(`${backendUrl}/webhooks/razorpay`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Razorpay-Signature': 'invalid_tampered_fake_signature_999',
-        },
-        body: JSON.stringify({
-          event: 'payment_link.paid',
-          payload: { test: 'fake' },
-        }),
-      });
-
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        alert(`🔒 Signature Check Protection Verified!\nBackend rejected tampered payload with HTTP 400:\n"${data.error || 'Invalid signature'}"`);
-      }
-    } catch (err) {
-      alert('🔒 Backend signature check protection active!');
     }
   };
 
@@ -425,8 +296,10 @@ export const BookingView: React.FC<BookingViewProps> = ({ setActiveTab }) => {
         setPaymentError(data.error || 'Payment signature verification failed. Slot was NOT booked.');
         setIsPaymentProcessing(false);
       }
-    } catch (err) {
-      completeBookingFlow(paymentTokens.razorpay_payment_id, paymentTokens.razorpay_order_id);
+    } catch (err: any) {
+      console.error('Payment verification error:', err);
+      setPaymentError('Payment verification failed due to network error. Slot was NOT booked.');
+      setIsPaymentProcessing(false);
     }
   };
 
@@ -952,37 +825,6 @@ export const BookingView: React.FC<BookingViewProps> = ({ setActiveTab }) => {
                       >
                         Pay Now <ExternalLink className="w-3.5 h-3.5" />
                       </a>
-                    </div>
-                  </div>
-
-                  {/* Testing & Verification Control Panel */}
-                  <div className="bg-slate-800/80 p-4 rounded-2xl border border-slate-700/70 space-y-3">
-                    <span className="text-[11px] font-extrabold text-sky-300 flex items-center gap-1.5">
-                      <ShieldCheck className="w-4 h-4 text-emerald-400" /> Razorpay Webhook Simulation Controls (Step 4 Testing):
-                    </span>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                      <button
-                        onClick={() => handleSimulateWebhookSuccess(generatedPaymentLink.appointmentId)}
-                        className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-xs flex items-center justify-center gap-1.5 transition-all"
-                      >
-                        <CheckCircle2 className="w-4 h-4" /> Simulate Webhook Paid ✓
-                      </button>
-
-                      <button
-                        onClick={() => handleSimulateWebhookFailure(generatedPaymentLink.appointmentId)}
-                        className="px-3.5 py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-xl shadow-xs flex items-center justify-center gap-1.5 transition-all"
-                      >
-                        <AlertCircle className="w-4 h-4" /> Simulate Payment Failed ✕
-                      </button>
-
-                      <button
-                        onClick={handleTestTamperedSignature}
-                        className="px-3.5 py-2 bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs rounded-xl shadow-xs flex items-center justify-center gap-1.5 transition-all"
-                      >
-                        <Lock className="w-4 h-4" /> Test Fake Signature 🔒
-                      </button>
-
                     </div>
                   </div>
                 </div>
