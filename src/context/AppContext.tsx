@@ -49,7 +49,7 @@ interface AppContextType {
   // Booking & Slots
   slots: AvailabilitySlot[];
   addSlot: (dayLabel: string, timeLabel: string) => void;
-  removeSlot: (slotId: string) => boolean;
+  removeSlot: (slotId: string) => Promise<boolean> | boolean;
   appointments: Appointment[];
   bookAppointment: (
     slotId: string,
@@ -313,9 +313,49 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  // Fetch on mount
+  // Fetch authoritative availability slots from backend
+  const refreshSlots = async () => {
+    try {
+      const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+      const res = await fetch(`${backendUrl}/slots`);
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data.slots)) {
+          setSlots((prev) => {
+            const map = new Map<string, AvailabilitySlot>();
+            INITIAL_SLOTS.forEach((s) => map.set(s.id, s));
+            data.slots.forEach((s: AvailabilitySlot) => map.set(s.id, s));
+            prev.forEach((s) => {
+              if (!map.has(s.id)) map.set(s.id, s);
+            });
+            return Array.from(map.values());
+          });
+        }
+      }
+    } catch (e) {
+      console.warn('Notice fetching backend slots:', e);
+    }
+  };
+
+  // Fetch on mount & poll every 3s + window focus for real-time slot propagation
   useEffect(() => {
     refreshCounselorApplications();
+    refreshSlots();
+
+    const interval = setInterval(() => {
+      refreshSlots();
+    }, 3000);
+
+    const onFocus = () => {
+      refreshSlots();
+      refreshCounselorApplications();
+    };
+    window.addEventListener('focus', onFocus);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', onFocus);
+    };
   }, []);
 
   // Auto-refresh applications when admin logs in
@@ -618,7 +658,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   // Availability Slots
-  const addSlot = (dayLabel: string, timeLabel: string) => {
+  const addSlot = async (dayLabel: string, timeLabel: string) => {
     const counselorId = (user.role === 'admin' || user.id === 'admin-1') ? 'therapist-1' : user.id;
     const newSlot: AvailabilitySlot = {
       id: `slot-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
@@ -631,10 +671,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       day_label: dayLabel || 'Today',
       time_label: timeLabel || '11:00 AM - 11:50 AM',
     };
+
     setSlots((prev) => [...prev, newSlot]);
+
+    try {
+      const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+      await fetch(`${backendUrl}/slots`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newSlot),
+      });
+      refreshSlots();
+    } catch (e) {
+      console.warn('Backend slot publish notice:', e);
+    }
   };
 
-  const removeSlot = (slotId: string): boolean => {
+  const removeSlot = async (slotId: string): Promise<boolean> => {
     const slot = slots.find((s) => s.id === slotId);
     if (!slot) return false;
     if (slot.is_booked) {
@@ -642,6 +695,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return false;
     }
     setSlots((prev) => prev.filter((s) => s.id !== slotId));
+
+    try {
+      const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+      await fetch(`${backendUrl}/slots/${slotId}`, {
+        method: 'DELETE',
+      });
+      refreshSlots();
+    } catch (e) {
+      console.warn('Backend slot delete notice:', e);
+    }
     return true;
   };
 
