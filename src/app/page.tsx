@@ -19,6 +19,7 @@ import { DoctorPortalView } from '@/components/views/DoctorPortalView';
 
 import { CounselorApplyModal } from '@/components/CounselorApplyModal';
 import { CounselorStatusView } from '@/components/views/CounselorStatusView';
+import { BookingConfirmationView } from '@/components/views/BookingConfirmationView';
 
 function MindBloomApp() {
   const { user, submitCounselorApplication } = useApp();
@@ -86,6 +87,9 @@ function MindBloomApp() {
           ))}
         {activeTab === 'home' && <HomeView setActiveTab={setActiveTab} />}
         {activeTab === 'booking' && <BookingView setActiveTab={setActiveTab} />}
+        {activeTab === 'booking_confirmation' && (
+          <BookingConfirmationView appointmentId={null} setActiveTab={setActiveTab} />
+        )}
         {activeTab === 'video_call' && <VideoCallView />}
         {activeTab === 'chat' && <ChatView />}
         {activeTab === 'careplan' && <CarePlanView />}
