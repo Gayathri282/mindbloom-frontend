@@ -24,23 +24,36 @@ import { BookingConfirmationView } from '@/components/views/BookingConfirmationV
 
 function MindBloomApp() {
   const { user, submitCounselorApplication } = useApp();
-  const [activeTab, setActiveTab] = useState<string>('home');
   const [authModalOpen, setAuthModalOpen] = useState<boolean>(false);
   const [counselorModalOpen, setCounselorModalOpen] = useState<boolean>(false);
 
-  // Auto-switch tab based on user role when switching demo user via Auth modal
+  const [activeTab, setActiveTab] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      const savedTab = localStorage.getItem('mindbloom_active_tab');
+      if (savedTab) return savedTab;
+    }
+    if (user.role === 'admin') return 'admin';
+    if (user.role === 'therapist' || user.role === 'counselor') return 'doctor_portal';
+    return 'home';
+  });
+
   useEffect(() => {
-    if (
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('mindbloom_active_tab', activeTab);
+    }
+  }, [activeTab]);
+
+  // Keep admin & doctor views aligned with active role
+  useEffect(() => {
+    if (user.role === 'admin' && activeTab !== 'admin' && activeTab !== 'chat') {
+      setActiveTab('admin');
+    } else if (
       (user.role === 'therapist' || user.role === 'counselor') &&
       activeTab !== 'video_call' &&
       activeTab !== 'chat' &&
       activeTab !== 'careplan'
     ) {
       setActiveTab('doctor_portal');
-    } else if (user.role === 'admin' && activeTab !== 'chat') {
-      setActiveTab('admin');
-    } else if (user.role === 'patient' && activeTab === 'doctor_portal') {
-      setActiveTab('home');
     }
   }, [user.role]);
 

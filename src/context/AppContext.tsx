@@ -122,15 +122,39 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
+const getSavedState = () => {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem('mindbloom_session_v4');
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) {
+    return null;
+  }
+};
+
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<UserProfile>(DEFAULT_PATIENT);
-  const [usersList, setUsersList] = useState<UserProfile[]>([SEEDED_ADMIN]);
+  const [user, setUser] = useState<UserProfile>(() => {
+    const saved = getSavedState();
+    return saved?.user || DEFAULT_PATIENT;
+  });
+
+  const [usersList, setUsersList] = useState<UserProfile[]>(() => {
+    const saved = getSavedState();
+    if (saved?.usersList && Array.isArray(saved.usersList) && saved.usersList.length > 0) {
+      const hasAdmin = saved.usersList.some((u: UserProfile) => u.email === SEEDED_ADMIN.email);
+      return hasAdmin ? saved.usersList : [SEEDED_ADMIN, ...saved.usersList];
+    }
+    return [SEEDED_ADMIN];
+  });
   
   const [authError, setAuthError] = useState<string | null>(null);
   const [authSuccess, setAuthSuccess] = useState<string | null>(null);
   
   const [slots, setSlots] = useState<AvailabilitySlot[]>(INITIAL_SLOTS);
-  const [appointments, setAppointments] = useState<Appointment[]>(INITIAL_APPOINTMENTS);
+  const [appointments, setAppointments] = useState<Appointment[]>(() => {
+    const saved = getSavedState();
+    return saved?.appointments || INITIAL_APPOINTMENTS;
+  });
   
   // Call state
   const [activeIncomingCall, setActiveIncomingCall] = useState<Appointment | null>(null);
@@ -145,69 +169,74 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [lastCrisisTriggered, setLastCrisisTriggered] = useState<boolean>(false);
   
   // Care plan & Documents
-  const [carePlan, setCarePlan] = useState<CarePlan>(THERAPIST_CARE_PLAN);
+  const [carePlan, setCarePlan] = useState<CarePlan>(() => {
+    const saved = getSavedState();
+    return saved?.carePlan || THERAPIST_CARE_PLAN;
+  });
   const [patientDocuments, setPatientDocuments] = useState<PatientDocument[]>(INITIAL_PATIENT_DOCUMENTS);
   const [sessionNotes, setSessionNotes] = useState<Record<string, string>>({
     'appt-past-1': 'Patient showed clear progress with grounding exercises. Mindful breathing recommended.',
   });
   
   // Community & Crisis
-  const [communityPosts, setCommunityPosts] = useState<CommunityPost[]>(INITIAL_COMMUNITY_POSTS);
+  const [communityPosts, setCommunityPosts] = useState<CommunityPost[]>(() => {
+    const saved = getSavedState();
+    return saved?.communityPosts || INITIAL_COMMUNITY_POSTS;
+  });
   const [crisisLogs, setCrisisLogs] = useState<CrisisLog[]>(INITIAL_CRISIS_LOGS);
   const [analytics] = useState<AnalyticsMetrics>(ANALYTICS_METRICS);
 
   // Multi-Counselor Verification & Session Types
-  const [counselorApplications, setCounselorApplications] = useState<CounselorApplication[]>([]);
-  const [sessionTypes, setSessionTypes] = useState<SessionType[]>([
-    {
-      id: 'st-30m-therapist-1',
-      counselor_id: 'therapist-1',
-      duration_minutes: 30,
-      price: 499,
-      label: '30-Minute Focus Session',
-      is_active: true,
-    },
-    {
-      id: 'st-60m-therapist-1',
-      counselor_id: 'therapist-1',
-      duration_minutes: 60,
-      price: 999,
-      label: '60-Minute Comprehensive Session',
-      is_active: true,
-    },
-    {
-      id: 'st-30m-therapist-2',
-      counselor_id: 'therapist-2',
-      duration_minutes: 30,
-      price: 599,
-      label: '30-Minute Trauma & EMDR Consult',
-      is_active: true,
-    },
-    {
-      id: 'st-60m-therapist-2',
-      counselor_id: 'therapist-2',
-      duration_minutes: 60,
-      price: 1199,
-      label: '60-Minute EMDR & Trauma Deep-Dive',
-      is_active: true,
-    },
-    {
-      id: 'st-30m-therapist-3',
-      counselor_id: 'therapist-3',
-      duration_minutes: 30,
-      price: 399,
-      label: '30-Minute Grief Support Check-in',
-      is_active: true,
-    },
-    {
-      id: 'st-60m-therapist-3',
-      counselor_id: 'therapist-3',
-      duration_minutes: 60,
-      price: 799,
-      label: '60-Minute Comprehensive Grief Session',
-      is_active: true,
-    },
-  ]);
+  const [counselorApplications, setCounselorApplications] = useState<CounselorApplication[]>(() => {
+    const saved = getSavedState();
+    return saved?.counselorApplications || [];
+  });
+
+  const [sessionTypes, setSessionTypes] = useState<SessionType[]>(() => {
+    const saved = getSavedState();
+    if (saved?.sessionTypes && Array.isArray(saved.sessionTypes) && saved.sessionTypes.length > 0) {
+      return saved.sessionTypes;
+    }
+    return [
+      {
+        id: 'st-30m-therapist-1',
+        counselor_id: 'therapist-1',
+        duration_minutes: 30,
+        price: 499,
+        label: '30-Minute Focus Session',
+        is_active: true,
+      },
+      {
+        id: 'st-60m-therapist-1',
+        counselor_id: 'therapist-1',
+        duration_minutes: 60,
+        price: 999,
+        label: '60-Minute Comprehensive Session',
+        is_active: true,
+      },
+    ];
+  });
+
+  // Save session state to localStorage on any state modification
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      localStorage.setItem(
+        'mindbloom_session_v4',
+        JSON.stringify({
+          user,
+          usersList,
+          counselorApplications,
+          appointments,
+          carePlan,
+          communityPosts,
+          sessionTypes,
+        })
+      );
+    } catch (e) {
+      console.warn('Error writing session state to localStorage:', e);
+    }
+  }, [user, usersList, counselorApplications, appointments, carePlan, communityPosts, sessionTypes]);
 
   // Fetch counselor applications from backend and reconcile with usersList
   useEffect(() => {
