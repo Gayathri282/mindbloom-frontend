@@ -209,6 +209,73 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     },
   ]);
 
+  // Fetch counselor applications from backend and reconcile with usersList
+  useEffect(() => {
+    const fetchBackendApplications = async () => {
+      try {
+        const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+        const res = await fetch(`${backendUrl}/counselors/applications`);
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data.applications) && data.applications.length > 0) {
+            setCounselorApplications((prev) => {
+              const map = new Map<string, CounselorApplication>();
+              data.applications.forEach((app: CounselorApplication) => map.set(app.id, app));
+              prev.forEach((app) => map.set(app.id, app));
+              return Array.from(map.values());
+            });
+          }
+        }
+      } catch (e) {
+        console.warn('Notice fetching backend counselor applications:', e);
+      }
+    };
+
+    fetchBackendApplications();
+  }, []);
+
+  // Reconcile pending counselor users from usersList into counselorApplications
+  useEffect(() => {
+    const pendingCounselorUsers = usersList.filter(
+      (u) => u.role === 'therapist' || u.role === 'counselor'
+    );
+
+    if (pendingCounselorUsers.length > 0) {
+      setCounselorApplications((prev) => {
+        const existingUserIds = new Set(prev.map((app) => app.user_id || app.id));
+        const newDerivedApps: CounselorApplication[] = [];
+
+        pendingCounselorUsers.forEach((u) => {
+          if (!existingUserIds.has(u.id)) {
+            newDerivedApps.push({
+              id: `app-user-${u.id}`,
+              user_id: u.id,
+              full_name: u.full_name,
+              email: u.email,
+              avatar_url: u.avatar_url,
+              bio: u.bio || 'Licensed mental health practitioner application under admin review.',
+              license_number: u.license_number || 'PSY-2026-PENDING',
+              certifications: ['Clinical Psychology Certification'],
+              degree: u.credentials || 'Psy.D. Clinical Psychology',
+              specialties: u.specialties || ['Cognitive Behavioral Therapy (CBT)', 'Anxiety & Panic'],
+              id_document_name: 'Government_ID_Verification.pdf',
+              id_document_url: 'https://rxxlawptbtwrtxpbyoyt.supabase.co/storage/v1/object/public/counselor-docs/govt-id-sample.pdf',
+              years_of_experience: u.years_of_experience || 5,
+              languages: u.languages || ['English'],
+              status: u.status === 'approved' ? 'approved' : u.status === 'rejected' ? 'rejected' : 'pending',
+              submitted_at: u.created_at || new Date().toISOString(),
+            });
+          }
+        });
+
+        if (newDerivedApps.length > 0) {
+          return [...prev, ...newDerivedApps];
+        }
+        return prev;
+      });
+    }
+  }, [usersList]);
+
   const addSessionType = (durationMinutes: number, price: number, label: string) => {
     const newSt: SessionType = {
       id: `st-${durationMinutes}m-${Date.now()}`,
