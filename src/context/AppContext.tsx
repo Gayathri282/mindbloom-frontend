@@ -154,7 +154,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [authError, setAuthError] = useState<string | null>(null);
   const [authSuccess, setAuthSuccess] = useState<string | null>(null);
   
-  const [slots, setSlots] = useState<AvailabilitySlot[]>(INITIAL_SLOTS);
+  const [slots, setSlots] = useState<AvailabilitySlot[]>(() => {
+    const saved = getSavedState();
+    if (saved?.slots && Array.isArray(saved.slots) && saved.slots.length > 0) {
+      const existingIds = new Set(saved.slots.map((s: AvailabilitySlot) => s.id));
+      const missingInitial = INITIAL_SLOTS.filter((s) => !existingIds.has(s.id));
+      return [...saved.slots, ...missingInitial];
+    }
+    return INITIAL_SLOTS;
+  });
   const [appointments, setAppointments] = useState<Appointment[]>(() => {
     const saved = getSavedState();
     return saved?.appointments || INITIAL_APPOINTMENTS;
@@ -232,6 +240,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           usersList,
           counselorApplications,
           appointments,
+          slots,
           carePlan,
           communityPosts,
           sessionTypes,
@@ -240,7 +249,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     } catch (e) {
       console.warn('Error writing session state to localStorage:', e);
     }
-  }, [user, usersList, counselorApplications, appointments, carePlan, communityPosts, sessionTypes]);
+  }, [user, usersList, counselorApplications, appointments, slots, carePlan, communityPosts, sessionTypes]);
 
   // Fetch counselor applications from backend (shared function used on mount and by admin refresh)
   const refreshCounselorApplications = async () => {
