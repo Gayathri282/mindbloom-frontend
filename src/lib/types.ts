@@ -16,6 +16,8 @@ export interface UserProfile {
   languages?: string[];
   starting_price?: number;
   rejection_reason?: string;
+  is_deleted?: boolean;
+  deactivated_at?: string;
   created_at: string;
 }
 

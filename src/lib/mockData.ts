@@ -76,7 +76,7 @@ export const SEEDED_ADMIN: UserProfile = {
 export const SEEDED_PATIENT: UserProfile = {
   id: 'patient-1',
   email: 'patient@example.com',
-  full_name: 'New Patient Profile',
+  full_name: 'Ananya Sen',
   role: 'patient',
   avatar_url: undefined,
   bio: 'Seeking guidance for mindfulness practice and stress management.',

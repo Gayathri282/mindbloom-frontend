@@ -130,6 +130,9 @@ export const BookingView: React.FC<BookingViewProps> = ({ setActiveTab }) => {
 
   const currentPrice = selectedSessionTypeObj.price || 499;
 
+  // Step 1: Browse Profile, Step 2: Dedicated Slot Selection Screen
+  const [bookingStep, setBookingStep] = useState<'browse' | 'select_slot'>('browse');
+
   // Dynamic Payment Link State
   const [generatedPaymentLink, setGeneratedPaymentLink] = useState<{
     shortUrl: string;
@@ -407,210 +410,311 @@ export const BookingView: React.FC<BookingViewProps> = ({ setActiveTab }) => {
 
   return (
     <div className="space-y-8 max-w-6xl mx-auto pb-16">
-      {/* Top Banner & Multi-Counselor Directory Explorer */}
-      <div className="relative rounded-3xl overflow-hidden shadow-xl border border-sky-200 bg-white p-6 sm:p-8 space-y-6">
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-slate-100 pb-6">
-          <div>
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-sky-100 text-sky-900 text-xs font-bold rounded-full border border-sky-300 mb-2">
-              <ShieldCheck className="w-4 h-4 text-sky-600" /> Multi-Counselor Clinical Practice Directory
+      {/* Admin Restricted Mode Notice */}
+      {user.role === 'admin' && (
+        <div className="p-4 bg-slate-900 text-white rounded-3xl border border-slate-800 flex items-center justify-between gap-4 shadow-lg">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-amber-500/20 text-amber-300 flex items-center justify-center font-bold text-base border border-amber-400/30">
+              👑
             </div>
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900">
-              Find Your Clinical Psychologist & Counselor
-            </h2>
-            <p className="text-xs text-slate-600 font-medium mt-1">
-              Browse licensed mental health experts, select customized 30-min or 60-min session durations, and book via Razorpay UPI.
-            </p>
+            <div>
+              <h4 className="text-sm font-extrabold text-white">Admin View Mode</h4>
+              <p className="text-xs text-slate-400 font-medium">
+                Consultation booking is reserved for patient accounts. Admin accounts can view practitioner profiles and directory listings.
+              </p>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-extrabold text-emerald-900 bg-emerald-100 px-3.5 py-1.5 rounded-full border border-emerald-300">
-              {approvedCounselors.length} Verified Counselors Live
-            </span>
-          </div>
+          <button
+            onClick={() => setActiveTab('admin')}
+            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl border border-slate-700 transition-all shrink-0"
+          >
+            Return to Admin Ops &rarr;
+          </button>
         </div>
+      )}
 
-        {/* Search Bar & Specialty Filter Tags */}
-        <div className="space-y-3">
-          <div className="relative">
-            <Search className="w-5 h-5 text-slate-400 absolute left-4 top-3.5" />
-            <input
-              type="text"
-              placeholder="Search counselors by name, specialty (e.g. Anxiety, CBT, Trauma), or language..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-medium text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500 shadow-xs"
-            />
-          </div>
-
-          <div className="flex flex-wrap gap-2 pt-1">
-            {SPECIALTY_FILTERS.map((filter) => {
-              const active = selectedSpecialtyFilter === filter;
-              return (
-                <button
-                  key={filter}
-                  onClick={() => setSelectedSpecialtyFilter(filter)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all border ${
-                    active
-                      ? 'bg-sky-600 text-white border-sky-600 shadow-xs'
-                      : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
-                  }`}
-                >
-                  {filter}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-
-      {/* Counselor Selection Cards Directory Grid */}
-      <div className="space-y-4">
-        <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-          <User className="w-5 h-5 text-sky-600" />
-          Verified Clinical Practitioners
-        </h3>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          {filteredCounselors.map((counselor) => {
-            const isSelected = selectedCounselorId === counselor.id;
-            return (
-              <div
-                key={counselor.id}
-                onClick={() => {
-                  setSelectedCounselorId(counselor.id);
-                  setSelectedSlotId(null);
-                  setSelectedSessionTypeId(null);
-                }}
-                className={`p-6 rounded-3xl border transition-all cursor-pointer relative flex flex-col justify-between space-y-4 ${
-                  isSelected
-                    ? 'bg-gradient-to-br from-sky-50 via-cyan-50 to-white border-sky-500 ring-2 ring-sky-500/30 shadow-xl'
-                    : 'bg-white border-slate-200 hover:border-sky-300 hover:shadow-md'
-                }`}
-              >
-                <div className="space-y-3">
-                  <div className="flex items-start justify-between gap-3">
-                    <UserAvatar name={counselor.full_name} avatarUrl={counselor.avatar_url} size="lg" />
-                    <span className="text-xs font-extrabold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200 flex items-center gap-1">
-                      <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" /> 4.95
-                    </span>
-                  </div>
-
-                  <div>
-                    <h4 className="text-base font-extrabold text-slate-900">{counselor.full_name}</h4>
-                    <p className="text-xs text-slate-500 font-bold">{counselor.credentials || 'Psy.D. Clinical Psychology'}</p>
-                    <p className="text-[11px] font-mono text-sky-800 mt-0.5">Lic: {counselor.license_number || 'PSY-2026-88941'}</p>
-                  </div>
-
-                  <p className="text-xs text-slate-600 line-clamp-2 font-medium">{counselor.bio}</p>
-
-                  <div className="flex flex-wrap gap-1">
-                    {(counselor.specialties || ['Anxiety', 'CBT Therapy']).slice(0, 3).map((spec, i) => (
-                      <span
-                        key={i}
-                        className="px-2 py-0.5 bg-slate-100 text-slate-800 text-[10px] font-bold rounded-md"
-                      >
-                        {spec}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
-                  <span className="text-xs text-slate-500 font-semibold">
-                    From <span className="font-extrabold text-slate-900 text-sm">₹{counselor.starting_price || 499}</span>
-                  </span>
-
-                  <button
-                    type="button"
-                    className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                      isSelected
-                        ? 'blue-gradient-btn text-white shadow-xs'
-                        : 'bg-sky-50 text-sky-900 hover:bg-sky-100 border border-sky-200'
-                    }`}
-                  >
-                    {isSelected ? 'Selected Counselor ✓' : 'Select Profile'}
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Selected Counselor Detailed Profile, Session Types & Slot Booking Shell */}
-      {selectedCounselor && (
-        <div className="refreshing-card p-6 sm:p-8 space-y-8 animate-fadeIn">
-          {/* Counselor Profile Showcase Header */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5 border-b border-slate-100 pb-6">
-            <div className="flex items-center gap-4">
-              <UserAvatar name={selectedCounselor.full_name} avatarUrl={selectedCounselor.avatar_url} size="xl" />
+      {/* ========================================================================= */}
+      {/* STEP 1: BROWSE COUNSELOR DIRECTORY & FULL CLINICAL PROFILE                */}
+      {/* ========================================================================= */}
+      {bookingStep === 'browse' && (
+        <div className="space-y-8 animate-fadeIn">
+          {/* Top Banner & Multi-Counselor Directory Explorer */}
+          <div className="relative rounded-3xl overflow-hidden shadow-xl border border-sky-200 bg-white p-6 sm:p-8 space-y-6">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-slate-100 pb-6">
               <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="text-xl font-extrabold text-slate-900">{selectedCounselor.full_name}</h3>
-                  <span className="px-2.5 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-extrabold rounded-full border border-emerald-300">
-                    Verified Active Practitioner
-                  </span>
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-sky-100 text-sky-900 text-xs font-bold rounded-full border border-sky-300 mb-2">
+                  <ShieldCheck className="w-4 h-4 text-sky-600" /> Multi-Counselor Clinical Practice Directory
                 </div>
-                <p className="text-xs text-slate-600 font-semibold mt-0.5">
-                  {selectedCounselor.credentials} • {selectedCounselor.years_of_experience || 8} Years Experience
+                <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900">
+                  Find Your Clinical Psychologist & Counselor
+                </h2>
+                <p className="text-xs text-slate-600 font-medium mt-1">
+                  Browse licensed mental health experts, view credentials, and select available consultation times.
                 </p>
-                <div className="flex flex-wrap gap-1.5 mt-2">
-                  {(selectedCounselor.languages || ['English', 'Hindi']).map((lang, idx) => (
-                    <span key={idx} className="text-[11px] font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md">
-                      🗣️ {lang}
-                    </span>
-                  ))}
-                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-extrabold text-emerald-900 bg-emerald-100 px-3.5 py-1.5 rounded-full border border-emerald-300">
+                  {approvedCounselors.length} Verified Counselors Live
+                </span>
+              </div>
+            </div>
+
+            {/* Search Bar & Specialty Filter Tags */}
+            <div className="space-y-3">
+              <div className="relative">
+                <Search className="w-5 h-5 text-slate-400 absolute left-4 top-3.5" />
+                <input
+                  type="text"
+                  placeholder="Search counselors by name, specialty (e.g. Anxiety, CBT, Trauma), or language..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-medium text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500 shadow-xs"
+                />
+              </div>
+
+              <div className="flex flex-wrap gap-2 pt-1">
+                {SPECIALTY_FILTERS.map((filter) => {
+                  const active = selectedSpecialtyFilter === filter;
+                  return (
+                    <button
+                      key={filter}
+                      onClick={() => setSelectedSpecialtyFilter(filter)}
+                      className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all border ${
+                        active
+                          ? 'bg-sky-600 text-white border-sky-600 shadow-xs'
+                          : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                      }`}
+                    >
+                      {filter}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </div>
 
-          {/* STEP A: Select Session Type / Duration */}
+          {/* Counselor Selection Cards Directory Grid */}
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h4 className="text-sm font-extrabold text-slate-900 flex items-center gap-2">
-                <Award className="w-4 h-4 text-sky-600" />
-                Step 1: Choose Consultation Session Duration & Fee
-              </h4>
-              <span className="text-xs font-bold text-sky-700">
-                {counselorSessionTypes.length} Options Offered
-              </span>
-            </div>
+            <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+              <User className="w-5 h-5 text-sky-600" />
+              Verified Clinical Practitioners
+            </h3>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {counselorSessionTypes.map((st) => {
-                const isSelectedST = selectedSessionTypeObj.id === st.id;
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              {filteredCounselors.map((counselor) => {
+                const isSelected = selectedCounselorId === counselor.id;
                 return (
                   <div
-                    key={st.id}
-                    onClick={() => setSelectedSessionTypeId(st.id)}
-                    className={`p-5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between ${
-                      isSelectedST
-                        ? 'bg-gradient-to-br from-sky-50 to-cyan-50 border-sky-500 ring-2 ring-sky-500/30 shadow-md'
-                        : 'bg-white border-slate-200 hover:border-sky-300'
+                    key={counselor.id}
+                    onClick={() => {
+                      setSelectedCounselorId(counselor.id);
+                      setSelectedSlotId(null);
+                      setSelectedSessionTypeId(null);
+                    }}
+                    className={`p-6 rounded-3xl border transition-all cursor-pointer relative flex flex-col justify-between space-y-4 ${
+                      isSelected
+                        ? 'bg-gradient-to-br from-sky-50 via-cyan-50 to-white border-sky-500 ring-2 ring-sky-500/30 shadow-xl'
+                        : 'bg-white border-slate-200 hover:border-sky-300 hover:shadow-md'
                     }`}
                   >
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-sm font-extrabold text-slate-900">{st.label}</span>
-                        <span className="px-2 py-0.5 bg-sky-100 text-sky-900 font-bold text-[10px] rounded-full border border-sky-200">
-                          {st.duration_minutes} Mins
+                    <div className="space-y-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <UserAvatar name={counselor.full_name} avatarUrl={counselor.avatar_url} size="lg" />
+                        <span className="text-xs font-extrabold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200 flex items-center gap-1">
+                          <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" /> 4.95
                         </span>
                       </div>
-                      <p className="text-xs text-slate-500 font-medium">100% Encrypted Video Format</p>
+
+                      <div>
+                        <h4 className="text-base font-extrabold text-slate-900">{counselor.full_name}</h4>
+                        <p className="text-xs text-slate-500 font-bold">{counselor.credentials || 'Psy.D. Clinical Psychology'}</p>
+                        <p className="text-[11px] font-mono text-sky-800 mt-0.5">Lic: {counselor.license_number || 'PSY-2026-88941'}</p>
+                      </div>
+
+                      <p className="text-xs text-slate-600 line-clamp-2 font-medium">{counselor.bio}</p>
+
+                      <div className="flex flex-wrap gap-1">
+                        {(counselor.specialties || ['Anxiety', 'CBT Therapy']).slice(0, 3).map((spec, i) => (
+                          <span
+                            key={i}
+                            className="px-2 py-0.5 bg-slate-100 text-slate-800 text-[10px] font-bold rounded-md"
+                          >
+                            {spec}
+                          </span>
+                        ))}
+                      </div>
                     </div>
 
-                    <div className="text-right">
-                      <span className="text-xl font-black text-emerald-700 block">₹{st.price}</span>
-                      <span className="text-[10px] font-bold text-sky-700">
-                        {isSelectedST ? 'Selected' : 'Select'}
+                    <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
+                      <span className="text-xs text-slate-500 font-semibold">
+                        From <span className="font-extrabold text-slate-900 text-sm">₹{counselor.starting_price || 499}</span>
                       </span>
+
+                      {user.role !== 'admin' ? (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedCounselorId(counselor.id);
+                            setBookingStep('select_slot');
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                          }}
+                          className="px-4 py-2 blue-gradient-btn text-white font-bold text-xs rounded-xl shadow-xs flex items-center gap-1 transition-all hover:scale-105"
+                        >
+                          Select Time & Book &rarr;
+                        </button>
+                      ) : (
+                        <span className="text-[11px] font-bold text-slate-400">Admin Preview</span>
+                      )}
                     </div>
                   </div>
                 );
               })}
             </div>
           </div>
+
+          {/* Selected Counselor Full Profile Showcase & Step 2 CTA Button */}
+          {selectedCounselor && (
+            <div className="refreshing-card p-6 sm:p-8 space-y-6 animate-fadeIn">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5 border-b border-slate-100 pb-6">
+                <div className="flex items-center gap-4">
+                  <UserAvatar name={selectedCounselor.full_name} avatarUrl={selectedCounselor.avatar_url} size="xl" />
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-xl font-extrabold text-slate-900">{selectedCounselor.full_name}</h3>
+                      <span className="px-2.5 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-extrabold rounded-full border border-emerald-300">
+                        Verified Active Practitioner
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-600 font-semibold mt-0.5">
+                      {selectedCounselor.credentials} • {selectedCounselor.years_of_experience || 8} Years Practice
+                    </p>
+                    <div className="flex flex-wrap gap-1.5 mt-2">
+                      {(selectedCounselor.languages || ['English', 'Hindi']).map((lang, idx) => (
+                        <span key={idx} className="text-[11px] font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md">
+                          🗣️ {lang}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {user.role !== 'admin' && (
+                  <button
+                    onClick={() => {
+                      setBookingStep('select_slot');
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    className="px-6 py-3 blue-gradient-btn text-white font-extrabold text-xs rounded-2xl shadow-lg flex items-center gap-2 transition-all hover:scale-105"
+                  >
+                    <CalendarIcon className="w-4 h-4 text-sky-200" />
+                    Select a Time & Book Session &rarr;
+                  </button>
+                )}
+              </div>
+
+              <div>
+                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Clinical Bio & Approach:</h4>
+                <p className="text-xs text-slate-700 leading-relaxed bg-slate-50 p-4 rounded-2xl border border-slate-100 italic">
+                  &quot;{selectedCounselor.bio}&quot;
+                </p>
+              </div>
+
+              <div>
+                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Offered Consultation Rates:</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {counselorSessionTypes.map((st) => (
+                    <div key={st.id} className="p-4 bg-sky-50/60 rounded-2xl border border-sky-200/80 flex items-center justify-between">
+                      <div>
+                        <span className="text-xs font-extrabold text-slate-900 block">{st.label}</span>
+                        <span className="text-[10px] text-sky-800 font-bold">{st.duration_minutes} Minutes Encrypted Session</span>
+                      </div>
+                      <span className="text-base font-black text-emerald-700">₹{st.price}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* STEP 2: DEDICATED TIME SLOT SELECTION & CHECKOUT SCREEN                   */}
+      {/* ========================================================================= */}
+      {bookingStep === 'select_slot' && selectedCounselor && (
+        <div className="space-y-8 animate-fadeIn">
+          {/* Top Step 2 Back Navigation Header */}
+          <div className="flex items-center justify-between bg-white p-4 sm:p-6 rounded-3xl border border-sky-200 shadow-md">
+            <button
+              onClick={() => {
+                setBookingStep('browse');
+                setSelectedSlotId(null);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl flex items-center gap-2 transition-all"
+            >
+              <ChevronLeft className="w-4 h-4 text-slate-600" /> Back to Counselor Profiles
+            </button>
+
+            <div className="flex items-center gap-3">
+              <UserAvatar name={selectedCounselor.full_name} avatarUrl={selectedCounselor.avatar_url} size="sm" />
+              <div className="text-right">
+                <h3 className="text-sm font-extrabold text-slate-900">{selectedCounselor.full_name}</h3>
+                <span className="text-[10px] text-sky-700 font-bold">Step 2 of 2: Time Slot Selection</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="refreshing-card p-6 sm:p-8 space-y-8">
+            {/* STEP A: Select Session Type / Duration */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h4 className="text-sm font-extrabold text-slate-900 flex items-center gap-2">
+                  <Award className="w-4 h-4 text-sky-600" />
+                  Select Session Duration & Fee
+                </h4>
+                <span className="text-xs font-bold text-sky-700">
+                  {counselorSessionTypes.length} Options Offered
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {counselorSessionTypes.map((st) => {
+                  const isSelectedST = selectedSessionTypeObj.id === st.id;
+                  return (
+                    <div
+                      key={st.id}
+                      onClick={() => setSelectedSessionTypeId(st.id)}
+                      className={`p-5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between ${
+                        isSelectedST
+                          ? 'bg-gradient-to-br from-sky-50 to-cyan-50 border-sky-500 ring-2 ring-sky-500/30 shadow-md'
+                          : 'bg-white border-slate-200 hover:border-sky-300'
+                      }`}
+                    >
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-sm font-extrabold text-slate-900">{st.label}</span>
+                          <span className="px-2 py-0.5 bg-sky-100 text-sky-900 font-bold text-[10px] rounded-full border border-sky-200">
+                            {st.duration_minutes} Mins
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-500 font-medium">100% Encrypted Video Format</p>
+                      </div>
+
+                      <div className="text-right">
+                        <span className="text-xl font-black text-emerald-700 block">₹{st.price}</span>
+                        <span className="text-[10px] font-bold text-sky-700">
+                          {isSelectedST ? 'Selected' : 'Select'}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
 
           {/* STEP B: Select Available Slot */}
           <div className="space-y-4">
@@ -866,6 +970,7 @@ export const BookingView: React.FC<BookingViewProps> = ({ setActiveTab }) => {
                       >
                         <Lock className="w-4 h-4" /> Test Fake Signature 🔒
                       </button>
+
                     </div>
                   </div>
                 </div>
@@ -873,7 +978,8 @@ export const BookingView: React.FC<BookingViewProps> = ({ setActiveTab }) => {
             </div>
           )}
         </div>
-      )}
+      </div>
+    )}
 
       {/* Interactive Razorpay UPI Simulation Modal */}
       {showUpiSimModal && selectedCounselor && selectedSlotObj && (

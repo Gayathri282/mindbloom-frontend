@@ -109,6 +109,10 @@ interface AppContextType {
   resolveCrisisLog: (logId: string) => void;
   analytics: AnalyticsMetrics;
 
+  // User Directory & Account Management
+  allUsersList: UserProfile[];
+  deleteUserProfile: (userId: string) => void;
+
   // Multi-Counselor Verification & Session Types
   counselorApplications: CounselorApplication[];
   sessionTypes: SessionType[];
@@ -123,7 +127,7 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<UserProfile>(SEEDED_PATIENT);
-  const [usersList] = useState<UserProfile[]>([
+  const [usersList, setUsersList] = useState<UserProfile[]>([
     SEEDED_PATIENT,
     SEEDED_THERAPIST,
     SEEDED_THERAPIST_2,
@@ -382,12 +386,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setAuthError('An account with this email already exists! Please click Sign In to access your account.');
       return false;
     }
+    const cleanName = name?.trim() || email.split('@')[0] || 'Member';
     const newUser: UserProfile = {
       id: `patient-${Date.now()}`,
       email,
-      full_name: name || 'New Patient',
+      full_name: cleanName,
       role: 'patient',
-      avatar_url: undefined, // Optional avatar - user may or may not add image
+      avatar_url: undefined,
       bio: 'MindBloom member focusing on mental wellness.',
       created_at: new Date().toISOString(),
     };
@@ -679,36 +684,55 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const generateAiStarterPlan = (intakeGoals: string, feeling: string) => {
-    // Only used if source is not therapist-assigned
+    const cleanFeeling = feeling.trim() || 'emotional wellness';
+    const cleanGoals = intakeGoals.trim() || 'stress reduction';
+
     const aiPlan: CarePlan = {
       id: `cp-ai-${Date.now()}`,
       patient_id: user.id,
       source: 'ai_generated',
-      title: `AI Starter MindBloom Plan for ${user.full_name}`,
-      summary: `Personalized starter routine created based on intake focus: "${feeling}" & goal: "${intakeGoals}".`,
+      title: `Personalized AI Starter Plan: ${cleanFeeling}`,
+      summary: `Self-service routine tailored for: "${cleanFeeling}". Primary Goal: "${cleanGoals}".`,
       coping_strategies: [
         {
-          id: 'cs-ai-1',
-          title: '3-Minute Mindful Reset',
-          description: 'Take three deep abdominal breaths whenever feeling tense.',
-          category: 'Breathing',
+          id: `cs-1-${Date.now()}`,
+          title: `Grounding Protocol for ${cleanFeeling}`,
+          description: `Practice 4-7-8 rhythmic breathing whenever experiencing ${cleanFeeling}. Focus on releasing physical tension in your shoulders, chest, and jaw.`,
+          category: 'Grounding',
         },
         {
-          id: 'cs-ai-2',
-          title: 'Daily Evening Reflection',
-          description: 'Acknowledge three wins or positive moments before sleep.',
+          id: `cs-2-${Date.now()}`,
+          title: `Cognitive Reframing: ${cleanGoals}`,
+          description: `When unhelpful thoughts arise regarding ${cleanGoals}, pause and ask: "Is this thought 100% factual right now, or is stress talking?"`,
           category: 'Cognitive',
+        },
+        {
+          id: `cs-3-${Date.now()}`,
+          title: 'Evening Decompression Routine',
+          description: 'Spend 5 minutes before bed writing down 2 small progress wins from today to quiet bedtime mental chatter.',
+          category: 'Behavioral',
         },
       ],
       daily_exercises: [
         {
-          id: 'de-ai-1',
-          title: '5-Minute Morning Guided Meditation',
+          id: `de-1-${Date.now()}`,
+          title: `5-Minute Morning Focus: ${cleanGoals}`,
           duration: '5 mins',
-          target_frequency: 'Daily',
+          target_frequency: 'Daily (Morning)',
+        },
+        {
+          id: `de-2-${Date.now()}`,
+          title: 'Midday 3-Minute Abdominal Breath Reset',
+          duration: '3 mins',
+          target_frequency: 'Daily (Midday)',
         },
       ],
-      resources: [{ title: 'MindBloom Self-Care Starter Guide', url: '#' }],
+      resources: [
+        {
+          title: 'MindBloom Self-Guided CBT & Grounding Starter Manual (PDF)',
+          url: '#',
+        },
+      ],
       updated_at: new Date().toISOString(),
     };
 
@@ -818,6 +842,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     );
   };
 
+  const deleteUserProfile = (userId: string) => {
+    setUsersList((prev) =>
+      prev.map((u) =>
+        u.id === userId ? { ...u, is_deleted: true, deactivated_at: new Date().toISOString() } : u
+      )
+    );
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -869,6 +901,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         moderateComment,
         crisisLogs,
         resolveCrisisLog,
+        allUsersList: usersList,
+        deleteUserProfile,
         analytics,
         counselorApplications,
         sessionTypes,

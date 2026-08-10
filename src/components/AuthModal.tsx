@@ -211,6 +211,54 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onOpenCou
           </button>
         </div>
 
+        {/* Quick Demo Role Selector Pills */}
+        <div className="mb-4 p-3 bg-slate-50 border border-slate-200 rounded-2xl space-y-2 text-xs">
+          <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 block">
+            ⚡ Quick Demo Role Switcher:
+          </span>
+          <div className="grid grid-cols-3 gap-1.5 font-bold">
+            <button
+              type="button"
+              onClick={() => {
+                loginUser('patient@example.com');
+                setTimeout(() => {
+                  onClose();
+                  clearAuthMessages();
+                }, 400);
+              }}
+              className="py-1.5 px-2 bg-white hover:bg-sky-50 text-slate-800 border border-slate-200 rounded-xl text-[11px] transition-all"
+            >
+              Patient
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                loginUser('dr.jenkins@mindbloom.app');
+                setTimeout(() => {
+                  onClose();
+                  clearAuthMessages();
+                }, 400);
+              }}
+              className="py-1.5 px-2 bg-white hover:bg-emerald-50 text-emerald-900 border border-slate-200 rounded-xl text-[11px] transition-all"
+            >
+              Counselor
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                loginUser('admin@mindbloom.app');
+                setTimeout(() => {
+                  onClose();
+                  clearAuthMessages();
+                }, 400);
+              }}
+              className="py-1.5 px-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-[11px] shadow-xs transition-all"
+            >
+              👑 Admin Ops
+            </button>
+          </div>
+        </div>
+
         {/* Feedback Alerts */}
         {authError && (
           <div className="mb-4 p-3.5 bg-amber-50 border border-amber-200 rounded-2xl flex items-start gap-2 text-xs text-amber-900">
