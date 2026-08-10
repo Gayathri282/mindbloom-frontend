@@ -15,6 +15,7 @@ import { CarePlanView } from '@/components/views/CarePlanView';
 import { MindfulnessView } from '@/components/views/MindfulnessView';
 import { CommunityView } from '@/components/views/CommunityView';
 import { AdminView } from '@/components/views/AdminView';
+import { AdminLoginView } from '@/components/views/AdminLoginView';
 import { DoctorPortalView } from '@/components/views/DoctorPortalView';
 
 import { CounselorApplyModal } from '@/components/CounselorApplyModal';
@@ -96,6 +97,7 @@ function MindBloomApp() {
         {activeTab === 'mindfulness' && <MindfulnessView />}
         {activeTab === 'community' && <CommunityView />}
         {activeTab === 'admin' && <AdminView />}
+        {activeTab === 'admin_login' && <AdminLoginView setActiveTab={setActiveTab} />}
       </main>
 
       {/* Sticky Bottom Navigation Bar (App-Shell standard across desktop & mobile) */}

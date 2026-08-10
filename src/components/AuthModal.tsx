@@ -291,18 +291,34 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onOpenCou
 
         {/* Distinct Join as a Counselor Callout */}
         {onOpenCounselorApply && (
-          <div className="mt-6 pt-4 border-t border-slate-100 text-center">
-            <p className="text-[11px] text-slate-500 font-medium mb-2">Are you a licensed mental health practitioner?</p>
-            <button
-              type="button"
-              onClick={() => {
-                onClose();
-                onOpenCounselorApply();
-              }}
-              className="w-full py-2.5 px-3 bg-sky-50 hover:bg-sky-100 text-sky-900 border border-sky-200 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2"
-            >
-              <UserCheck className="w-4 h-4 text-sky-700" /> Apply to Join as a Counselor
-            </button>
+          <div className="mt-6 pt-4 border-t border-slate-100 text-center space-y-3">
+            <div>
+              <p className="text-[11px] text-slate-500 font-medium mb-2">Are you a licensed mental health practitioner?</p>
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onOpenCounselorApply();
+                }}
+                className="w-full py-2.5 px-3 bg-sky-50 hover:bg-sky-100 text-sky-900 border border-sky-200 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2"
+              >
+                <UserCheck className="w-4 h-4 text-sky-700" /> Apply to Join as a Counselor
+              </button>
+            </div>
+
+            <div className="pt-2 border-t border-slate-100">
+              <a
+                href="/admin"
+                onClick={(e) => {
+                  e.preventDefault();
+                  onClose();
+                  window.location.href = '/admin';
+                }}
+                className="text-[11px] font-bold text-slate-500 hover:text-slate-900 inline-flex items-center gap-1 transition-all"
+              >
+                🔐 Clinical Operations & Admin Security Portal Sign In →
+              </a>
+            </div>
           </div>
         )}
       </div>
