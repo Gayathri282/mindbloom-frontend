@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useApp } from '@/context/AppContext';
 import { UserAvatar } from '@/components/UserAvatar';
-import { AvailabilitySlot } from '@/lib/types';
+import { AvailabilitySlot, SessionType } from '@/lib/types';
 import {
   Video,
   Calendar as CalendarIcon,
@@ -141,6 +141,37 @@ export const DoctorPortalView: React.FC<DoctorPortalViewProps> = ({ setActiveTab
   const mySessionTypes = sessionTypes.filter(
     (st) => st.counselor_id === user.id || (user.email && st.counselor_id === user.email)
   );
+
+  const availableSessionTypes: SessionType[] =
+    mySessionTypes.length > 0
+      ? mySessionTypes
+      : [
+          {
+            id: `st-30m-${user.id}`,
+            counselor_id: user.id,
+            duration_minutes: 30,
+            price: 499,
+            label: '30-Minute Focus Session',
+            is_active: true,
+          },
+          {
+            id: `st-50m-${user.id}`,
+            counselor_id: user.id,
+            duration_minutes: 50,
+            price: 750,
+            label: '50-Minute Standard Consultation',
+            is_active: true,
+          },
+          {
+            id: `st-60m-${user.id}`,
+            counselor_id: user.id,
+            duration_minutes: 60,
+            price: 999,
+            label: '60-Minute Comprehensive Consultation',
+            is_active: true,
+          },
+        ];
+
   const mySlots = slots.filter(
     (s) => s.therapist_id === user.id || (user.email && s.therapist_email === user.email)
   );
@@ -652,9 +683,11 @@ export const DoctorPortalView: React.FC<DoctorPortalViewProps> = ({ setActiveTab
                       onChange={(e) => setSlotDurationMins(Number(e.target.value))}
                       className="w-full px-4 py-2.5 bg-slate-900 border border-white/20 text-white rounded-xl text-xs font-bold focus:outline-none focus:border-emerald-400"
                     >
-                      <option value={30}>30 Minutes</option>
-                      <option value={50}>50 Minutes (Standard)</option>
-                      <option value={60}>60 Minutes (Comprehensive)</option>
+                      {availableSessionTypes.map((st) => (
+                        <option key={st.id} value={st.duration_minutes}>
+                          {st.duration_minutes} Mins — {st.label} (₹{st.price})
+                        </option>
+                      ))}
                     </select>
                     <span className="text-[10px] text-emerald-300/80 mt-1 block font-medium">
                       Session length for patient
@@ -750,9 +783,11 @@ export const DoctorPortalView: React.FC<DoctorPortalViewProps> = ({ setActiveTab
                                 onChange={(e) => setEditDurationMins(Number(e.target.value))}
                                 className="w-full px-2 py-1.5 border border-emerald-300 bg-emerald-50 rounded-xl text-xs font-bold text-slate-900 focus:outline-none"
                               >
-                                <option value={30}>30m</option>
-                                <option value={50}>50m</option>
-                                <option value={60}>60m</option>
+                                {availableSessionTypes.map((st) => (
+                                  <option key={st.id} value={st.duration_minutes}>
+                                    {st.duration_minutes}m (₹{st.price})
+                                  </option>
+                                ))}
                               </select>
                             </div>
                           </div>

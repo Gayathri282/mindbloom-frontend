@@ -351,18 +351,44 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  // Fetch authoritative session types from backend
+  const refreshSessionTypes = async () => {
+    try {
+      const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+      const res = await fetch(`${backendUrl}/session-types`);
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data.sessionTypes) && data.sessionTypes.length > 0) {
+          setSessionTypes((prev) => {
+            const map = new Map<string, SessionType>();
+            data.sessionTypes.forEach((st: SessionType) => map.set(st.id, st));
+            prev.forEach((st) => {
+              if (!map.has(st.id)) map.set(st.id, st);
+            });
+            return Array.from(map.values());
+          });
+        }
+      }
+    } catch (e) {
+      console.warn('Notice fetching backend session types:', e);
+    }
+  };
+
   // Fetch on mount & poll every 3s + window focus for real-time slot propagation
   useEffect(() => {
     refreshCounselorApplications();
     refreshSlots();
+    refreshSessionTypes();
 
     const interval = setInterval(() => {
       refreshSlots();
+      refreshSessionTypes();
     }, 3000);
 
     const onFocus = () => {
       refreshSlots();
       refreshCounselorApplications();
+      refreshSessionTypes();
     };
     window.addEventListener('focus', onFocus);
 
@@ -421,7 +447,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, [usersList]);
 
-  const addSessionType = (durationMinutes: number, price: number, label: string) => {
+  const addSessionType = async (durationMinutes: number, price: number, label: string) => {
     const newSt: SessionType = {
       id: `st-${durationMinutes}m-${Date.now()}`,
       counselor_id: user.id,
@@ -431,6 +457,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       is_active: true,
     };
     setSessionTypes((prev) => [...prev, newSt]);
+
+    try {
+      const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+      await fetch(`${backendUrl}/session-types`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newSt),
+      });
+      refreshSessionTypes();
+    } catch (e) {
+      console.warn('Backend session type publish notice:', e);
+    }
   };
 
   const toggleSessionType = (sessionTypeId: string) => {
