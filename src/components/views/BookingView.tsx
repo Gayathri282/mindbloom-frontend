@@ -171,14 +171,37 @@ export const BookingView: React.FC<BookingViewProps> = ({ setActiveTab }) => {
     counselorSessionTypes.find((st) => st.id === selectedSessionTypeId) ||
     counselorSessionTypes[0];
 
-  const specificSlots = slots.filter(
-    (s) =>
-      s.therapist_id === selectedCounselor?.id ||
-      (selectedCounselor?.email && s.therapist_id === selectedCounselor.email) ||
-      (selectedCounselor?.id === 'therapist-1' && (s.therapist_id === 'therapist-1' || s.therapist_id?.startsWith('counselor-') || s.therapist_id === user.id))
-  );
+  const specificSlots = slots.filter((s) => {
+    if (!selectedCounselor) return false;
+    
+    // Direct ID match
+    if (s.therapist_id === selectedCounselor.id) return true;
+    
+    // Direct Email match
+    if (s.therapist_email && selectedCounselor.email && s.therapist_email.toLowerCase() === selectedCounselor.email.toLowerCase()) return true;
+    if (s.therapist_id && selectedCounselor.email && s.therapist_id.toLowerCase() === selectedCounselor.email.toLowerCase()) return true;
+    
+    // Name match
+    if (s.therapist_name && selectedCounselor.full_name && s.therapist_name.toLowerCase() === selectedCounselor.full_name.toLowerCase()) return true;
+    
+    // Normalized ID match (strip prefixes like app-user- or counselor-app-)
+    const cleanSlotId = s.therapist_id.replace(/^app-user-/, '').replace(/^counselor-app-/, '');
+    const cleanCounselorId = selectedCounselor.id.replace(/^app-user-/, '').replace(/^counselor-app-/, '');
+    if (cleanSlotId === cleanCounselorId) return true;
+    
+    // Fallback for default Dr. Sarah Jenkins (therapist-1)
+    if (
+      (selectedCounselor.id === 'therapist-1' || selectedCounselor.email === 'sarah.jenkins@mindbloom.app') &&
+      (s.therapist_id === 'therapist-1' || s.therapist_id?.startsWith('counselor-') || !s.therapist_id)
+    ) {
+      return true;
+    }
 
-  const counselorSlots = specificSlots.length > 0 ? specificSlots : slots.filter((s) => !s.is_booked);
+    return false;
+  });
+
+  const openSlots = specificSlots.filter((s) => !s.is_booked);
+  const counselorSlots = openSlots.length > 0 ? openSlots : (specificSlots.length > 0 ? specificSlots : slots.filter((s) => !s.is_booked));
   const selectedSlotObj = counselorSlots.find((s) => s.id === selectedSlotId) || counselorSlots[0];
 
   const currentPrice = selectedSessionTypeObj.price || 499;

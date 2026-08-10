@@ -53,6 +53,8 @@ export interface CounselorApplication {
 export interface AvailabilitySlot {
   id: string;
   therapist_id: string;
+  therapist_email?: string;
+  therapist_name?: string;
   start_time: string; // ISO string
   end_time: string;   // ISO string
   is_booked: boolean;

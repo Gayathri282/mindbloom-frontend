@@ -623,6 +623,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const newSlot: AvailabilitySlot = {
       id: `slot-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
       therapist_id: counselorId,
+      therapist_email: user.email,
+      therapist_name: user.full_name,
       start_time: new Date().toISOString(),
       end_time: new Date(Date.now() + 50 * 60 * 1000).toISOString(),
       is_booked: false,
