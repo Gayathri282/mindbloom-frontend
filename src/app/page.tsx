@@ -55,7 +55,7 @@ function MindBloomApp() {
     ) {
       setActiveTab('doctor_portal');
     }
-  }, [user.role]);
+  }, [user.role, user.status]);
 
   const handleIncomingCallAccept = () => {
     setActiveTab('video_call');

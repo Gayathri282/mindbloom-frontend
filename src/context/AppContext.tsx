@@ -257,8 +257,43 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             });
             return Array.from(map.values());
           });
-        } else {
-          // Backend returned empty — don't wipe local state, just keep what we have
+
+          // Sync approved/rejected status from backend into usersList and logged-in user
+          data.applications.forEach((app: CounselorApplication) => {
+            if (app.status === 'approved' || app.status === 'rejected') {
+              setUsersList((prevUsers) =>
+                prevUsers.map((u) => {
+                  if (
+                    u.email.toLowerCase() === app.email.toLowerCase() ||
+                    u.id === app.user_id
+                  ) {
+                    return {
+                      ...u,
+                      status: app.status as 'approved' | 'rejected',
+                      role: app.status === 'approved' ? 'counselor' : u.role,
+                      rejection_reason: app.rejection_reason || u.rejection_reason,
+                    };
+                  }
+                  return u;
+                })
+              );
+
+              setUser((currentUser) => {
+                if (
+                  currentUser.email.toLowerCase() === app.email.toLowerCase() ||
+                  currentUser.id === app.user_id
+                ) {
+                  return {
+                    ...currentUser,
+                    status: app.status as 'approved' | 'rejected',
+                    role: app.status === 'approved' ? 'counselor' : currentUser.role,
+                    rejection_reason: app.rejection_reason || currentUser.rejection_reason,
+                  };
+                }
+                return currentUser;
+              });
+            }
+          });
         }
       }
     } catch (e) {
@@ -324,9 +359,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const newSt: SessionType = {
       id: `st-${durationMinutes}m-${Date.now()}`,
       counselor_id: user.id,
-      duration_minutes: Number(durationMinutes),
-      price: Number(price),
-      label: label || `${durationMinutes}-Minute Session`,
+      duration_minutes: durationMinutes,
+      price,
+      label,
       is_active: true,
     };
     setSessionTypes((prev) => [...prev, newSt]);
@@ -370,7 +405,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       created_at: new Date().toISOString(),
     };
 
-    usersList.push(newCounselorUser);
+    setUsersList((prev) => [...prev, newCounselorUser]);
     setUser(newCounselorUser);
 
     try {
@@ -399,44 +434,92 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return true;
   };
 
-  const approveCounselorApplication = (applicationId: string) => {
+  const approveCounselorApplication = async (applicationId: string) => {
+    // 1. Send approval to backend
+    try {
+      const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+      await fetch(`${backendUrl}/counselors/verify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ applicationId, action: 'approved' }),
+      });
+    } catch (e) {
+      console.warn('Backend counselor verify notice:', e);
+    }
+
+    // 2. Update counselorApplications state
     setCounselorApplications((prev) =>
       prev.map((app) => (app.id === applicationId ? { ...app, status: 'approved' } : app))
     );
 
+    // 3. Find target application
     const targetApp = counselorApplications.find((a) => a.id === applicationId);
-    if (targetApp) {
-      const counselorId = targetApp.user_id;
+    const emailToMatch = targetApp?.email.toLowerCase();
+    const userIdToMatch = targetApp?.user_id;
 
-      const updatedUser = usersList.find((u) => u.email === targetApp.email || u.id === counselorId);
-      if (updatedUser) {
-        updatedUser.status = 'approved';
-        updatedUser.role = 'counselor';
+    // 4. Update usersList state
+    setUsersList((prevUsers) =>
+      prevUsers.map((u) => {
+        if (
+          (emailToMatch && u.email.toLowerCase() === emailToMatch) ||
+          (userIdToMatch && u.id === userIdToMatch) ||
+          u.id === applicationId
+        ) {
+          return { ...u, status: 'approved', role: 'counselor' };
+        }
+        return u;
+      })
+    );
+
+    // 5. Update logged-in user if matching
+    setUser((currentUser) => {
+      if (
+        (emailToMatch && currentUser.email.toLowerCase() === emailToMatch) ||
+        (userIdToMatch && currentUser.id === userIdToMatch) ||
+        currentUser.id === applicationId
+      ) {
+        return { ...currentUser, status: 'approved', role: 'counselor' };
       }
+      return currentUser;
+    });
 
-      // Seed 30-min & 60-min default session types for this approved counselor
-      const default30Min: SessionType = {
-        id: `st-30m-${counselorId}`,
-        counselor_id: counselorId,
-        duration_minutes: 30,
-        price: 499,
-        label: '30-Minute Focus Session',
-        is_active: true,
-      };
-      const default60Min: SessionType = {
-        id: `st-60m-${counselorId}`,
-        counselor_id: counselorId,
-        duration_minutes: 60,
-        price: 999,
-        label: '60-Minute Comprehensive Consultation',
-        is_active: true,
-      };
+    // 6. Seed default session types
+    const counselorId = userIdToMatch || `counselor-${Date.now()}`;
+    const default30Min: SessionType = {
+      id: `st-30m-${counselorId}`,
+      counselor_id: counselorId,
+      duration_minutes: 30,
+      price: 499,
+      label: '30-Minute Focus Session',
+      is_active: true,
+    };
+    const default60Min: SessionType = {
+      id: `st-60m-${counselorId}`,
+      counselor_id: counselorId,
+      duration_minutes: 60,
+      price: 999,
+      label: '60-Minute Comprehensive Consultation',
+      is_active: true,
+    };
 
-      setSessionTypes((prev) => [...prev, default30Min, default60Min]);
-    }
+    setSessionTypes((prev) => {
+      const exists = prev.some((st) => st.counselor_id === counselorId);
+      return exists ? prev : [...prev, default30Min, default60Min];
+    });
   };
 
-  const rejectCounselorApplication = (applicationId: string, reason: string) => {
+  const rejectCounselorApplication = async (applicationId: string, reason: string) => {
+    try {
+      const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+      await fetch(`${backendUrl}/counselors/verify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ applicationId, action: 'rejected', rejectionReason: reason }),
+      });
+    } catch (e) {
+      console.warn('Backend counselor verify rejection notice:', e);
+    }
+
     setCounselorApplications((prev) =>
       prev.map((app) =>
         app.id === applicationId ? { ...app, status: 'rejected', rejection_reason: reason } : app
@@ -444,13 +527,32 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     );
 
     const targetApp = counselorApplications.find((a) => a.id === applicationId);
-    if (targetApp) {
-      const updatedUser = usersList.find((u) => u.email === targetApp.email || u.id === targetApp.user_id);
-      if (updatedUser) {
-        updatedUser.status = 'rejected';
-        updatedUser.rejection_reason = reason;
+    const emailToMatch = targetApp?.email.toLowerCase();
+    const userIdToMatch = targetApp?.user_id;
+
+    setUsersList((prevUsers) =>
+      prevUsers.map((u) => {
+        if (
+          (emailToMatch && u.email.toLowerCase() === emailToMatch) ||
+          (userIdToMatch && u.id === userIdToMatch) ||
+          u.id === applicationId
+        ) {
+          return { ...u, status: 'rejected', rejection_reason: reason };
+        }
+        return u;
+      })
+    );
+
+    setUser((currentUser) => {
+      if (
+        (emailToMatch && currentUser.email.toLowerCase() === emailToMatch) ||
+        (userIdToMatch && currentUser.id === userIdToMatch) ||
+        currentUser.id === applicationId
+      ) {
+        return { ...currentUser, status: 'rejected', rejection_reason: reason };
       }
-    }
+      return currentUser;
+    });
   };
 
   // Unlocked check: Chat unlocks if patient has at least 1 appointment record

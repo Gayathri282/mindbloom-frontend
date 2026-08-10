@@ -1,18 +1,32 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
-import { Clock, AlertTriangle, ShieldCheck, FileText, CheckCircle2, UserCheck, RefreshCw } from 'lucide-react';
+import { Clock, AlertTriangle, ShieldCheck, CheckCircle2, RefreshCw } from 'lucide-react';
 
 interface CounselorStatusViewProps {
   setActiveTab: (tab: string) => void;
 }
 
 export const CounselorStatusView: React.FC<CounselorStatusViewProps> = ({ setActiveTab }) => {
-  const { user, setUserRole } = useApp();
+  const { user, setUserRole, refreshCounselorApplications } = useApp();
+  const [isChecking, setIsChecking] = useState(false);
 
   const isPending = user.status === 'pending' || !user.status;
-  const isRejected = user.status === 'rejected';
+
+  const handleCheckStatus = async () => {
+    setIsChecking(true);
+    await refreshCounselorApplications();
+    setTimeout(() => setIsChecking(false), 800);
+  };
+
+  // Poll status every 5 seconds while on this screen
+  useEffect(() => {
+    const interval = setInterval(() => {
+      refreshCounselorApplications();
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <div className="max-w-3xl mx-auto py-12 px-4 space-y-6">
@@ -61,7 +75,7 @@ export const CounselorStatusView: React.FC<CounselorStatusViewProps> = ({ setAct
               <div>
                 <p className="font-bold">What happens next?</p>
                 <p className="text-[11px] text-sky-800 mt-0.5">
-                  Once an administrator approves your application, your profile will become live, 30-min and 60-min session types will be initialized, and you will gain full access to the Counselor Portal.
+                  Once an administrator approves your application, your profile will automatically unlock, 30-min and 60-min session types will be initialized, and you will gain full access to your Doctor Console.
                 </p>
               </div>
             </div>
@@ -93,7 +107,15 @@ export const CounselorStatusView: React.FC<CounselorStatusViewProps> = ({ setAct
           </>
         )}
 
-        <div className="pt-4 flex justify-center gap-3">
+        <div className="pt-4 flex justify-center gap-3 flex-wrap">
+          <button
+            onClick={handleCheckStatus}
+            disabled={isChecking}
+            className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition-all shadow-md flex items-center gap-2 disabled:opacity-50"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isChecking ? 'animate-spin' : ''}`} />
+            {isChecking ? 'Checking Approval...' : 'Check Approval Status'}
+          </button>
           <button
             onClick={() => setUserRole('patient')}
             className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-all"
