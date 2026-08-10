@@ -17,11 +17,8 @@ import {
   SessionType,
 } from '@/lib/types';
 import {
-  SEEDED_THERAPIST,
-  SEEDED_THERAPIST_2,
-  SEEDED_THERAPIST_3,
   SEEDED_ADMIN,
-  SEEDED_PATIENT,
+  DEFAULT_PATIENT,
   INITIAL_SLOTS,
   INITIAL_APPOINTMENTS,
   INITIAL_MESSAGES,
@@ -126,14 +123,8 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<UserProfile>(SEEDED_PATIENT);
-  const [usersList, setUsersList] = useState<UserProfile[]>([
-    SEEDED_PATIENT,
-    SEEDED_THERAPIST,
-    SEEDED_THERAPIST_2,
-    SEEDED_THERAPIST_3,
-    SEEDED_ADMIN,
-  ]);
+  const [user, setUser] = useState<UserProfile>(DEFAULT_PATIENT);
+  const [usersList, setUsersList] = useState<UserProfile[]>([SEEDED_ADMIN]);
   
   const [authError, setAuthError] = useState<string | null>(null);
   const [authSuccess, setAuthSuccess] = useState<string | null>(null);
@@ -353,7 +344,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Unlocked check: Chat unlocks if patient has at least 1 appointment record
   const isChatUnlocked = appointments.some(
-    (a) => a.patient_id === SEEDED_PATIENT.id || a.patient_id === user.id
+    (a) => a.patient_id === user.id || a.status === 'scheduled'
   );
 
   const clearAuthMessages = () => {
@@ -362,9 +353,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const setUserRole = (role: 'patient' | 'therapist' | 'admin') => {
-    if (role === 'patient') setUser(SEEDED_PATIENT);
-    else if (role === 'therapist') setUser(SEEDED_THERAPIST);
-    else setUser(SEEDED_ADMIN);
+    if (role === 'admin') setUser(SEEDED_ADMIN);
+    else setUser(DEFAULT_PATIENT);
   };
 
   const loginUser = (email: string): boolean => {
@@ -406,7 +396,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const addSlot = (dayLabel: string, timeLabel: string) => {
     const newSlot: AvailabilitySlot = {
       id: `slot-${Date.now()}`,
-      therapist_id: SEEDED_THERAPIST.id,
+      therapist_id: user.id,
       start_time: new Date().toISOString(),
       end_time: new Date(Date.now() + 50 * 60 * 1000).toISOString(),
       is_booked: false,
@@ -450,8 +440,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       patient_id: user.id,
       patient_name: user.full_name,
       patient_avatar: user.avatar_url,
-      therapist_id: SEEDED_THERAPIST.id,
-      therapist_name: SEEDED_THERAPIST.full_name,
+      therapist_id: slot.therapist_id,
+      therapist_name: 'Assigned Counselor',
       slot_id: slot.id,
       scheduled_at: slot.start_time,
       status: 'scheduled',
@@ -576,7 +566,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       sender_id: user.id,
       sender_name: user.full_name,
       sender_avatar: user.avatar_url,
-      receiver_id: user.role === 'therapist' ? SEEDED_PATIENT.id : SEEDED_THERAPIST.id,
+      receiver_id: user.role === 'therapist' ? 'patient' : 'counselor',
       content,
       is_ai: false,
       created_at: new Date().toISOString(),
@@ -587,10 +577,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const sendPrescription = (prescription: PrescriptionData) => {
     const rxMsg: ChatMessage = {
       id: `rx-${Date.now()}`,
-      sender_id: SEEDED_THERAPIST.id,
-      sender_name: SEEDED_THERAPIST.full_name,
-      sender_avatar: SEEDED_THERAPIST.avatar_url,
-      receiver_id: prescription.patient_id || SEEDED_PATIENT.id,
+      sender_id: user.id,
+      sender_name: user.full_name,
+      sender_avatar: user.avatar_url,
+      receiver_id: prescription.patient_id || 'patient',
       appointment_id: prescription.appointment_id,
       content: `Official Prescription (Rx #${prescription.rx_number}) issued for ${prescription.patient_name}.`,
       is_ai: false,

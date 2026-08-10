@@ -11,58 +11,6 @@ import {
   AnalyticsMetrics,
 } from './types';
 
-// Default seeded profiles (without demo Unsplash avatars for new profiles)
-export const SEEDED_THERAPIST: UserProfile = {
-  id: 'therapist-1',
-  email: 'dr.jenkins@mindbloom.app',
-  full_name: 'Dr. Sarah Jenkins, Psy.D.',
-  role: 'counselor',
-  status: 'approved',
-  avatar_url: undefined,
-  bio: 'Licensed Clinical Psychologist specializing in Cognitive Behavioral Therapy (CBT), Anxiety Spectrum Disorders, and Mindful Stress Reduction.',
-  credentials: 'Psy.D. Clinical Psychology',
-  license_number: 'PSY-2026-88941',
-  specialties: ['Anxiety & Panic', 'Cognitive Behavioral Therapy (CBT)', 'Mindfulness & Grounding'],
-  years_of_experience: 12,
-  languages: ['English', 'Hindi'],
-  starting_price: 499,
-  created_at: new Date().toISOString(),
-};
-
-export const SEEDED_THERAPIST_2: UserProfile = {
-  id: 'therapist-2',
-  email: 'dr.vance@mindbloom.app',
-  full_name: 'Dr. Marcus Vance, Psy.D.',
-  role: 'counselor',
-  status: 'approved',
-  avatar_url: undefined,
-  bio: 'Trauma recovery specialist focusing on EMDR, relationship dynamics, and stress resilience for high-performance individuals.',
-  credentials: 'Psy.D. Counseling & Trauma Studies',
-  license_number: 'PSY-2025-10492',
-  specialties: ['Trauma & PTSD', 'Relationships & Marriage', 'Stress & Burnout'],
-  years_of_experience: 15,
-  languages: ['English', 'Spanish'],
-  starting_price: 599,
-  created_at: new Date().toISOString(),
-};
-
-export const SEEDED_THERAPIST_3: UserProfile = {
-  id: 'therapist-3',
-  email: 'priya.sharma@mindbloom.app',
-  full_name: 'Priya Sharma, M.A. NCC',
-  role: 'counselor',
-  status: 'approved',
-  avatar_url: undefined,
-  bio: 'Compassionate counselor specializing in grief recovery, life transitions, and adolescent mental wellness.',
-  credentials: 'M.A. Applied Counseling Psychology, NCC',
-  license_number: 'NCC-2026-40192',
-  specialties: ['Grief & Bereavement', 'Adolescent Counseling', 'Depression & Mood'],
-  years_of_experience: 8,
-  languages: ['English', 'Hindi', 'Tamil'],
-  starting_price: 399,
-  created_at: new Date().toISOString(),
-};
-
 export const SEEDED_ADMIN: UserProfile = {
   id: 'admin-1',
   email: 'admin@mindbloom.app',
@@ -73,13 +21,13 @@ export const SEEDED_ADMIN: UserProfile = {
   created_at: new Date().toISOString(),
 };
 
-export const SEEDED_PATIENT: UserProfile = {
-  id: 'patient-1',
-  email: 'patient@example.com',
-  full_name: 'Ananya Sen',
+export const DEFAULT_PATIENT: UserProfile = {
+  id: 'patient-guest',
+  email: 'member@mindbloom.app',
+  full_name: 'MindBloom Member',
   role: 'patient',
   avatar_url: undefined,
-  bio: 'Seeking guidance for mindfulness practice and stress management.',
+  bio: 'Seeking guidance for mindfulness practice and mental wellness.',
   created_at: new Date().toISOString(),
 };
 
@@ -131,8 +79,7 @@ export const INITIAL_AI_MESSAGES: ChatMessage[] = [];
 
 export const THERAPIST_CARE_PLAN: CarePlan = {
   id: 'cp-default',
-  patient_id: SEEDED_PATIENT.id,
-  therapist_id: SEEDED_THERAPIST.id,
+  patient_id: DEFAULT_PATIENT.id,
   source: 'ai_generated',
   title: 'Personalized Care Plan',
   summary: 'Your custom care plan will appear here after your intake form or first therapist consultation.',
