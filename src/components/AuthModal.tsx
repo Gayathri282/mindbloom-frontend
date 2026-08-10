@@ -3,14 +3,15 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
 import { loadGoogleScript, decodeGoogleJwt } from '@/lib/googleAuth';
-import { X, Lock, Mail, User, ShieldCheck, CheckCircle, AlertTriangle } from 'lucide-react';
+import { X, Lock, Mail, User, ShieldCheck, CheckCircle, AlertTriangle, UserCheck } from 'lucide-react';
 
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onOpenCounselorApply?: () => void;
 }
 
-export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
+export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onOpenCounselorApply }) => {
   const { user, loginUser, signupUser, authError, authSuccess, clearAuthMessages } = useApp();
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [email, setEmail] = useState('');
@@ -287,6 +288,23 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
             {mode === 'signin' ? 'Sign In to Account' : 'Create Account'}
           </button>
         </form>
+
+        {/* Distinct Join as a Counselor Callout */}
+        {onOpenCounselorApply && (
+          <div className="mt-6 pt-4 border-t border-slate-100 text-center">
+            <p className="text-[11px] text-slate-500 font-medium mb-2">Are you a licensed mental health practitioner?</p>
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                onOpenCounselorApply();
+              }}
+              className="w-full py-2.5 px-3 bg-sky-50 hover:bg-sky-100 text-sky-900 border border-sky-200 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2"
+            >
+              <UserCheck className="w-4 h-4 text-sky-700" /> Apply to Join as a Counselor
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

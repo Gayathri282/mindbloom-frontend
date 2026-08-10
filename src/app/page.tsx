@@ -17,14 +17,23 @@ import { CommunityView } from '@/components/views/CommunityView';
 import { AdminView } from '@/components/views/AdminView';
 import { DoctorPortalView } from '@/components/views/DoctorPortalView';
 
+import { CounselorApplyModal } from '@/components/CounselorApplyModal';
+import { CounselorStatusView } from '@/components/views/CounselorStatusView';
+
 function MindBloomApp() {
-  const { user } = useApp();
+  const { user, submitCounselorApplication } = useApp();
   const [activeTab, setActiveTab] = useState<string>('home');
   const [authModalOpen, setAuthModalOpen] = useState<boolean>(false);
+  const [counselorModalOpen, setCounselorModalOpen] = useState<boolean>(false);
 
   // Auto-switch tab based on user role when switching demo user via Auth modal
   useEffect(() => {
-    if (user.role === 'therapist' && activeTab !== 'video_call' && activeTab !== 'chat' && activeTab !== 'careplan') {
+    if (
+      (user.role === 'therapist' || user.role === 'counselor') &&
+      activeTab !== 'video_call' &&
+      activeTab !== 'chat' &&
+      activeTab !== 'careplan'
+    ) {
       setActiveTab('doctor_portal');
     } else if (user.role === 'admin' && activeTab !== 'chat') {
       setActiveTab('admin');
@@ -36,6 +45,11 @@ function MindBloomApp() {
   const handleIncomingCallAccept = () => {
     setActiveTab('video_call');
   };
+
+  const isCounselorUnverified =
+    (user.role === 'therapist' || user.role === 'counselor') &&
+    user.status &&
+    user.status !== 'approved';
 
   return (
     <div className="min-h-screen flex flex-col text-slate-900 font-sans selection:bg-emerald-200 selection:text-emerald-900">
@@ -49,11 +63,27 @@ function MindBloomApp() {
       <IncomingCallModal onAccept={handleIncomingCallAccept} />
 
       {/* Auth & Account Switcher Modal */}
-      <AuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} />
+      <AuthModal
+        isOpen={authModalOpen}
+        onClose={() => setAuthModalOpen(false)}
+        onOpenCounselorApply={() => setCounselorModalOpen(true)}
+      />
+
+      {/* Prospective Counselor Sign-Up Modal */}
+      <CounselorApplyModal
+        isOpen={counselorModalOpen}
+        onClose={() => setCounselorModalOpen(false)}
+        onSubmitApplication={submitCounselorApplication}
+      />
 
       {/* Main View Shell Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-24">
-        {activeTab === 'doctor_portal' && <DoctorPortalView setActiveTab={setActiveTab} />}
+        {activeTab === 'doctor_portal' &&
+          (isCounselorUnverified ? (
+            <CounselorStatusView setActiveTab={setActiveTab} />
+          ) : (
+            <DoctorPortalView setActiveTab={setActiveTab} />
+          ))}
         {activeTab === 'home' && <HomeView setActiveTab={setActiveTab} />}
         {activeTab === 'booking' && <BookingView setActiveTab={setActiveTab} />}
         {activeTab === 'video_call' && <VideoCallView />}

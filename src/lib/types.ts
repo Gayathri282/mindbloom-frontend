@@ -1,4 +1,5 @@
-export type UserRole = 'patient' | 'therapist' | 'admin';
+export type UserRole = 'patient' | 'therapist' | 'counselor' | 'admin';
+export type CounselorVerificationStatus = 'pending' | 'approved' | 'rejected';
 
 export interface UserProfile {
   id: string;
@@ -7,7 +8,44 @@ export interface UserProfile {
   role: UserRole;
   avatar_url?: string;
   bio?: string;
+  status?: CounselorVerificationStatus;
+  specialties?: string[];
+  credentials?: string;
+  license_number?: string;
+  years_of_experience?: number;
+  languages?: string[];
+  starting_price?: number;
+  rejection_reason?: string;
   created_at: string;
+}
+
+export interface SessionType {
+  id: string;
+  counselor_id: string;
+  duration_minutes: number;
+  price: number;
+  label: string;
+  is_active: boolean;
+}
+
+export interface CounselorApplication {
+  id: string;
+  user_id: string;
+  full_name: string;
+  email: string;
+  avatar_url?: string;
+  bio: string;
+  license_number: string;
+  certifications: string[];
+  degree: string;
+  specialties: string[];
+  id_document_name: string;
+  id_document_url: string;
+  years_of_experience: number;
+  languages: string[];
+  status: CounselorVerificationStatus;
+  rejection_reason?: string;
+  submitted_at: string;
 }
 
 export interface AvailabilitySlot {
@@ -35,6 +73,11 @@ export interface Appointment {
   therapist_joined_at?: string;
   patient_joined_at?: string;
   completed_at?: string;
+  payment_id?: string;
+  razorpay_order_id?: string;
+  payment_status?: 'pending' | 'paid' | 'failed';
+  amount_paid?: number;
+  payment_method?: string;
   created_at: string;
   notes?: string;
 }

@@ -20,6 +20,8 @@ import {
 export const ChatView: React.FC = () => {
   const {
     user,
+    usersList,
+    appointments,
     isChatUnlocked,
     therapistMessages,
     sendTherapistMessage,
@@ -33,13 +35,48 @@ export const ChatView: React.FC = () => {
   const [inputText, setInputText] = useState('');
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
+  // List counselors patient has booked appointments with
+  const bookedCounselorIds = Array.from(
+    new Set(
+      appointments
+        .filter((a) => a.patient_id === user.id || a.patient_id === 'patient-1')
+        .map((a) => a.therapist_id)
+    )
+  );
+
+  const approvedCounselors = usersList.filter(
+    (u) => (u.role === 'counselor' || u.role === 'therapist') && (u.status === 'approved' || !u.status)
+  );
+
+  const [selectedCounselorId, setSelectedCounselorId] = useState<string>(
+    bookedCounselorIds[0] || approvedCounselors[0]?.id || 'therapist-1'
+  );
+
+  const selectedCounselorObj =
+    approvedCounselors.find((c) => c.id === selectedCounselorId) || approvedCounselors[0];
+
+  // Scoped unlocked check per counselor: unlocked if patient has booked with THIS specific counselor
+  const isCounselorChatUnlocked = appointments.some(
+    (a) =>
+      (a.patient_id === user.id || a.patient_id === 'patient-1') &&
+      a.therapist_id === selectedCounselorId
+  );
+
+  // Scoped messages per counselor-patient pair
+  const scopedTherapistMessages = therapistMessages.filter(
+    (m) =>
+      (m.sender_id === selectedCounselorId && m.receiver_id === user.id) ||
+      (m.sender_id === user.id && m.receiver_id === selectedCounselorId) ||
+      (!m.receiver_id && selectedCounselorId === 'therapist-1')
+  );
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   useEffect(() => {
     scrollToBottom();
-  }, [therapistMessages, aiMessages, activeTab]);
+  }, [therapistMessages, aiMessages, activeTab, selectedCounselorId]);
 
   const handleSend = (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,7 +93,7 @@ export const ChatView: React.FC = () => {
   return (
     <div className="max-w-4xl mx-auto space-y-4 pb-16">
       {/* Top Thread Switcher */}
-      <div className="refreshing-card p-2.5 flex items-center justify-between">
+      <div className="refreshing-card p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div className="flex bg-slate-100/80 p-1 rounded-2xl w-full sm:w-auto">
           {/* AI Support Assistant Tab */}
           <button
@@ -84,12 +121,33 @@ export const ChatView: React.FC = () => {
             }`}
           >
             <MessageSquare className="w-4 h-4 text-sky-300" />
-            Dr. Sarah Jenkins Thread
-            {!isChatUnlocked && (
+            Counselor Thread
+            {!isCounselorChatUnlocked && (
               <Lock className="w-3 h-3 text-amber-300 ml-1" />
             )}
           </button>
         </div>
+
+        {/* Per-Counselor Thread Selector */}
+        {activeTab === 'therapist' && user.role === 'patient' && (
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] font-bold text-slate-600">Select Counselor:</span>
+            <select
+              value={selectedCounselorId}
+              onChange={(e) => setSelectedCounselorId(e.target.value)}
+              className="px-3 py-1.5 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500"
+            >
+              {approvedCounselors.map((c) => {
+                const isUnlocked = bookedCounselorIds.includes(c.id);
+                return (
+                  <option key={c.id} value={c.id}>
+                    {c.full_name} {isUnlocked ? ' (Unlocked ✓)' : ' (Locked 🔒)'}
+                  </option>
+                );
+              })}
+            </select>
+          </div>
+        )}
 
         <div className="hidden sm:flex items-center gap-2 px-3 py-1 bg-sky-50/80 rounded-full border border-sky-200/60 text-xs font-semibold text-sky-800">
           <ShieldCheck className="w-4 h-4 text-sky-600" />
@@ -122,31 +180,33 @@ export const ChatView: React.FC = () => {
         ) : (
           <div className="bg-gradient-to-r from-sky-900 to-indigo-900 p-4 text-white flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <UserAvatar name="Dr. Sarah Jenkins, Psy.D." size="sm" />
+              <UserAvatar name={selectedCounselorObj?.full_name || 'Dr. Sarah Jenkins, Psy.D.'} avatarUrl={selectedCounselorObj?.avatar_url} size="sm" />
               <div>
-                <h3 className="text-sm font-bold">Dr. Sarah Jenkins, Psy.D.</h3>
+                <h3 className="text-sm font-bold">{selectedCounselorObj?.full_name || 'Dr. Sarah Jenkins'}</h3>
                 <p className="text-[11px] text-sky-100">
-                  {isChatUnlocked
+                  {isCounselorChatUnlocked
                     ? 'Permanent Consultation Thread Active'
-                    : 'Unlocked after your first booked consultation'}
+                    : 'Unlocked after booking a consultation with this counselor'}
                 </p>
               </div>
             </div>
           </div>
         )}
 
-        {/* Lock Overlay for Therapist Chat if no booking made yet */}
-        {activeTab === 'therapist' && !isChatUnlocked ? (
-          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-slate-50/60">
-            <div className="w-16 h-16 rounded-full bg-amber-100 text-amber-800 flex items-center justify-center mb-4 border border-amber-200">
+        {/* Lock Overlay for Counselor Chat if no booking made yet */}
+        {activeTab === 'therapist' && !isCounselorChatUnlocked ? (
+          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-slate-50/60 space-y-4">
+            <div className="w-16 h-16 rounded-full bg-amber-100 text-amber-800 flex items-center justify-center mb-1 border border-amber-200 shadow-sm">
               <Lock className="w-8 h-8" />
             </div>
-            <h4 className="text-base font-bold text-slate-900 mb-1">
-              Therapist Consultation Thread Locked
-            </h4>
-            <p className="text-xs text-slate-600 max-w-sm mb-6 font-medium">
-              Direct consultation messaging with Dr. Sarah Jenkins unlocks automatically once your first session is booked.
-            </p>
+            <div className="space-y-1">
+              <h4 className="text-base font-bold text-slate-900">
+                Direct Messaging Locked for {selectedCounselorObj?.full_name}
+              </h4>
+              <p className="text-xs text-slate-600 max-w-sm font-medium">
+                Direct messaging with <span className="font-bold text-slate-900">{selectedCounselorObj?.full_name}</span> unlocks automatically once your first consultation slot with them is booked via Razorpay.
+              </p>
+            </div>
           </div>
         ) : (
           <>
@@ -157,13 +217,13 @@ export const ChatView: React.FC = () => {
                 <CrisisResourceCard onDismiss={dismissCrisisAlert} isInline />
               )}
 
-              {(activeTab === 'ai' ? aiMessages : therapistMessages).length === 0 ? (
+              {(activeTab === 'ai' ? aiMessages : scopedTherapistMessages).length === 0 ? (
                 <div className="text-center py-16 text-slate-400 text-xs font-medium">
                   <MessageSquare className="w-8 h-8 mx-auto mb-2 text-sky-400 opacity-60" />
                   No messages yet in this thread. Start by typing a message below.
                 </div>
               ) : (
-                (activeTab === 'ai' ? aiMessages : therapistMessages).map((msg) => {
+                (activeTab === 'ai' ? aiMessages : scopedTherapistMessages).map((msg) => {
                   const isUser = msg.sender_id === user.id;
 
                   return (

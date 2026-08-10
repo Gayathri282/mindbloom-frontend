@@ -13,9 +13,13 @@ import {
   CommunityPost,
   AnalyticsMetrics,
   PrescriptionData,
+  CounselorApplication,
+  SessionType,
 } from '@/lib/types';
 import {
   SEEDED_THERAPIST,
+  SEEDED_THERAPIST_2,
+  SEEDED_THERAPIST_3,
   SEEDED_ADMIN,
   SEEDED_PATIENT,
   INITIAL_SLOTS,
@@ -49,7 +53,15 @@ interface AppContextType {
   addSlot: (dayLabel: string, timeLabel: string) => void;
   removeSlot: (slotId: string) => boolean;
   appointments: Appointment[];
-  bookAppointment: (slotId: string) => boolean;
+  bookAppointment: (
+    slotId: string,
+    paymentDetails?: {
+      payment_id: string;
+      razorpay_order_id: string;
+      amount_paid?: number;
+      payment_method?: string;
+    }
+  ) => boolean;
   
   // Doctor Initiated Call Flow
   activeIncomingCall: Appointment | null;
@@ -96,13 +108,28 @@ interface AppContextType {
   crisisLogs: CrisisLog[];
   resolveCrisisLog: (logId: string) => void;
   analytics: AnalyticsMetrics;
+
+  // Multi-Counselor Verification & Session Types
+  counselorApplications: CounselorApplication[];
+  sessionTypes: SessionType[];
+  submitCounselorApplication: (appData: Omit<CounselorApplication, 'id' | 'status' | 'submitted_at'>) => Promise<boolean>;
+  approveCounselorApplication: (applicationId: string) => void;
+  rejectCounselorApplication: (applicationId: string, reason: string) => void;
+  addSessionType: (durationMinutes: number, price: number, label: string) => void;
+  toggleSessionType: (sessionTypeId: string) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<UserProfile>(SEEDED_PATIENT);
-  const [usersList] = useState<UserProfile[]>([SEEDED_PATIENT, SEEDED_THERAPIST, SEEDED_ADMIN]);
+  const [usersList] = useState<UserProfile[]>([
+    SEEDED_PATIENT,
+    SEEDED_THERAPIST,
+    SEEDED_THERAPIST_2,
+    SEEDED_THERAPIST_3,
+    SEEDED_ADMIN,
+  ]);
   
   const [authError, setAuthError] = useState<string | null>(null);
   const [authSuccess, setAuthSuccess] = useState<string | null>(null);
@@ -133,6 +160,192 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [communityPosts, setCommunityPosts] = useState<CommunityPost[]>(INITIAL_COMMUNITY_POSTS);
   const [crisisLogs, setCrisisLogs] = useState<CrisisLog[]>(INITIAL_CRISIS_LOGS);
   const [analytics] = useState<AnalyticsMetrics>(ANALYTICS_METRICS);
+
+  // Multi-Counselor Verification & Session Types
+  const [counselorApplications, setCounselorApplications] = useState<CounselorApplication[]>([]);
+  const [sessionTypes, setSessionTypes] = useState<SessionType[]>([
+    {
+      id: 'st-30m-therapist-1',
+      counselor_id: 'therapist-1',
+      duration_minutes: 30,
+      price: 499,
+      label: '30-Minute Focus Session',
+      is_active: true,
+    },
+    {
+      id: 'st-60m-therapist-1',
+      counselor_id: 'therapist-1',
+      duration_minutes: 60,
+      price: 999,
+      label: '60-Minute Comprehensive Session',
+      is_active: true,
+    },
+    {
+      id: 'st-30m-therapist-2',
+      counselor_id: 'therapist-2',
+      duration_minutes: 30,
+      price: 599,
+      label: '30-Minute Trauma & EMDR Consult',
+      is_active: true,
+    },
+    {
+      id: 'st-60m-therapist-2',
+      counselor_id: 'therapist-2',
+      duration_minutes: 60,
+      price: 1199,
+      label: '60-Minute EMDR & Trauma Deep-Dive',
+      is_active: true,
+    },
+    {
+      id: 'st-30m-therapist-3',
+      counselor_id: 'therapist-3',
+      duration_minutes: 30,
+      price: 399,
+      label: '30-Minute Grief Support Check-in',
+      is_active: true,
+    },
+    {
+      id: 'st-60m-therapist-3',
+      counselor_id: 'therapist-3',
+      duration_minutes: 60,
+      price: 799,
+      label: '60-Minute Comprehensive Grief Session',
+      is_active: true,
+    },
+  ]);
+
+  const addSessionType = (durationMinutes: number, price: number, label: string) => {
+    const newSt: SessionType = {
+      id: `st-${durationMinutes}m-${Date.now()}`,
+      counselor_id: user.id,
+      duration_minutes: Number(durationMinutes),
+      price: Number(price),
+      label: label || `${durationMinutes}-Minute Session`,
+      is_active: true,
+    };
+    setSessionTypes((prev) => [...prev, newSt]);
+  };
+
+  const toggleSessionType = (sessionTypeId: string) => {
+    setSessionTypes((prev) =>
+      prev.map((st) => (st.id === sessionTypeId ? { ...st, is_active: !st.is_active } : st))
+    );
+  };
+
+  const submitCounselorApplication = async (
+    appData: Omit<CounselorApplication, 'id' | 'status' | 'submitted_at'>
+  ): Promise<boolean> => {
+    const counselorId = appData.user_id || `counselor-${Date.now()}`;
+    const newApp: CounselorApplication = {
+      ...appData,
+      id: `counselor-app-${Date.now()}`,
+      user_id: counselorId,
+      status: 'pending',
+      submitted_at: new Date().toISOString(),
+    };
+
+    setCounselorApplications((prev) => [newApp, ...prev]);
+
+    // Create corresponding pending user profile
+    const newCounselorUser: UserProfile = {
+      id: counselorId,
+      email: appData.email,
+      full_name: appData.full_name,
+      role: 'counselor',
+      status: 'pending',
+      avatar_url: appData.avatar_url,
+      bio: appData.bio,
+      credentials: appData.degree,
+      license_number: appData.license_number,
+      specialties: appData.specialties,
+      years_of_experience: appData.years_of_experience,
+      languages: appData.languages,
+      starting_price: 499,
+      created_at: new Date().toISOString(),
+    };
+
+    usersList.push(newCounselorUser);
+    setUser(newCounselorUser);
+
+    try {
+      const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+      await fetch(`${backendUrl}/counselors/apply`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fullName: appData.full_name,
+          email: appData.email,
+          bio: appData.bio,
+          licenseNumber: appData.license_number,
+          certifications: appData.certifications,
+          degree: appData.degree,
+          specialties: appData.specialties,
+          idDocumentName: appData.id_document_name,
+          idDocumentUrl: appData.id_document_url,
+          yearsOfExperience: appData.years_of_experience,
+          languages: appData.languages,
+        }),
+      });
+    } catch (e) {
+      console.warn('Backend counselor application save notice:', e);
+    }
+
+    return true;
+  };
+
+  const approveCounselorApplication = (applicationId: string) => {
+    setCounselorApplications((prev) =>
+      prev.map((app) => (app.id === applicationId ? { ...app, status: 'approved' } : app))
+    );
+
+    const targetApp = counselorApplications.find((a) => a.id === applicationId);
+    if (targetApp) {
+      const counselorId = targetApp.user_id;
+
+      const updatedUser = usersList.find((u) => u.email === targetApp.email || u.id === counselorId);
+      if (updatedUser) {
+        updatedUser.status = 'approved';
+        updatedUser.role = 'counselor';
+      }
+
+      // Seed 30-min & 60-min default session types for this approved counselor
+      const default30Min: SessionType = {
+        id: `st-30m-${counselorId}`,
+        counselor_id: counselorId,
+        duration_minutes: 30,
+        price: 499,
+        label: '30-Minute Focus Session',
+        is_active: true,
+      };
+      const default60Min: SessionType = {
+        id: `st-60m-${counselorId}`,
+        counselor_id: counselorId,
+        duration_minutes: 60,
+        price: 999,
+        label: '60-Minute Comprehensive Consultation',
+        is_active: true,
+      };
+
+      setSessionTypes((prev) => [...prev, default30Min, default60Min]);
+    }
+  };
+
+  const rejectCounselorApplication = (applicationId: string, reason: string) => {
+    setCounselorApplications((prev) =>
+      prev.map((app) =>
+        app.id === applicationId ? { ...app, status: 'rejected', rejection_reason: reason } : app
+      )
+    );
+
+    const targetApp = counselorApplications.find((a) => a.id === applicationId);
+    if (targetApp) {
+      const updatedUser = usersList.find((u) => u.email === targetApp.email || u.id === targetApp.user_id);
+      if (updatedUser) {
+        updatedUser.status = 'rejected';
+        updatedUser.rejection_reason = reason;
+      }
+    }
+  };
 
   // Unlocked check: Chat unlocks if patient has at least 1 appointment record
   const isChatUnlocked = appointments.some(
@@ -209,8 +422,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return true;
   };
 
-  // Book Appointment
-  const bookAppointment = (slotId: string): boolean => {
+  // Book Appointment (Only called upon Razorpay payment verification)
+  const bookAppointment = (
+    slotId: string,
+    paymentDetails?: {
+      payment_id: string;
+      razorpay_order_id: string;
+      amount_paid?: number;
+      payment_method?: string;
+    }
+  ): boolean => {
     const slot = slots.find((s) => s.id === slotId);
     if (!slot || slot.is_booked) return false;
 
@@ -229,6 +450,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       slot_id: slot.id,
       scheduled_at: slot.start_time,
       status: 'scheduled',
+      payment_id: paymentDetails?.payment_id || `pay_upi_${Date.now()}`,
+      razorpay_order_id: paymentDetails?.razorpay_order_id || `order_${Date.now()}`,
+      payment_status: 'paid',
+      amount_paid: paymentDetails?.amount_paid || 999,
+      payment_method: paymentDetails?.payment_method || 'Razorpay UPI',
       created_at: new Date().toISOString(),
     };
 
@@ -644,6 +870,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         crisisLogs,
         resolveCrisisLog,
         analytics,
+        counselorApplications,
+        sessionTypes,
+        submitCounselorApplication,
+        approveCounselorApplication,
+        rejectCounselorApplication,
+        addSessionType,
+        toggleSessionType,
       }}
     >
       {children}

@@ -47,10 +47,13 @@ export const DoctorPortalView: React.FC<DoctorPortalViewProps> = ({ setActiveTab
     crisisLogs,
     resolveCrisisLog,
     sendPrescription,
+    sessionTypes,
+    addSessionType,
+    toggleSessionType,
   } = useApp();
 
   const [activeDoctorTab, setActiveDoctorTab] = useState<
-    'schedule' | 'patients' | 'slots' | 'messages' | 'careplans'
+    'schedule' | 'patients' | 'slots' | 'session_types' | 'messages' | 'careplans'
   >('schedule');
 
   const [selectedPatientId, setSelectedPatientId] = useState<string>('patient-1');
@@ -64,10 +67,22 @@ export const DoctorPortalView: React.FC<DoctorPortalViewProps> = ({ setActiveTab
   const [newDay, setNewDay] = useState('Tomorrow');
   const [newTime, setNewTime] = useState('2:00 PM - 2:50 PM');
 
+  // Custom Session Type Inputs
+  const [newStDuration, setNewStDuration] = useState<number>(45);
+  const [newStPrice, setNewStPrice] = useState<number>(799);
+  const [newStLabel, setNewStLabel] = useState<string>('45-Minute Intermediate Session');
+
   const [replyText, setReplyText] = useState('');
 
   const [carePlanTitle, setCarePlanTitle] = useState(carePlan.title);
   const [carePlanSummary, setCarePlanSummary] = useState(carePlan.summary);
+
+  const mySessionTypes = sessionTypes.filter(
+    (st) => st.counselor_id === user.id || st.counselor_id === 'therapist-1'
+  );
+  const mySlots = slots.filter(
+    (s) => s.therapist_id === user.id || s.therapist_id === 'therapist-1'
+  );
 
   const handleSaveNotes = () => {
     if (upcomingAppt) {
@@ -80,6 +95,14 @@ export const DoctorPortalView: React.FC<DoctorPortalViewProps> = ({ setActiveTab
     e.preventDefault();
     addSlot(newDay, newTime);
     alert('New consultation availability slot published!');
+  };
+
+  const handleAddSessionType = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newStLabel.trim()) return;
+    addSessionType(newStDuration, newStPrice, newStLabel);
+    setNewStLabel('');
+    alert('Custom session type added successfully!');
   };
 
   const handleSendReply = (e: React.FormEvent) => {
@@ -166,7 +189,18 @@ export const DoctorPortalView: React.FC<DoctorPortalViewProps> = ({ setActiveTab
                   : 'text-white/80 hover:text-white'
               }`}
             >
-              <Clock className="w-3.5 h-3.5 text-emerald-700" /> Manage Slots
+              <Clock className="w-3.5 h-3.5 text-emerald-700" /> Availability Editor
+            </button>
+
+            <button
+              onClick={() => setActiveDoctorTab('session_types')}
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                activeDoctorTab === 'session_types'
+                  ? 'bg-white text-emerald-950 shadow-md'
+                  : 'text-white/80 hover:text-white'
+              }`}
+            >
+              <Award className="w-3.5 h-3.5 text-emerald-700" /> Session Rates & Types
             </button>
 
             <button
@@ -473,7 +507,7 @@ export const DoctorPortalView: React.FC<DoctorPortalViewProps> = ({ setActiveTab
           </form>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {slots.map((slot) => (
+            {mySlots.map((slot) => (
               <div
                 key={slot.id}
                 className="p-4 bg-slate-50/80 border border-slate-200 rounded-2xl flex items-center justify-between"
@@ -500,9 +534,104 @@ export const DoctorPortalView: React.FC<DoctorPortalViewProps> = ({ setActiveTab
                       ? 'text-slate-300 cursor-not-allowed'
                       : 'text-rose-600 hover:bg-rose-50'
                   }`}
-                  title={slot.is_booked ? 'Cannot remove booked slot' : 'Remove slot'}
+                  title={slot.is_booked ? 'Cannot remove an availability slot that is already booked by a patient!' : 'Remove slot'}
                 >
                   <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Tab 3.5: Counselor Session Types & Pricing Manager */}
+      {activeDoctorTab === 'session_types' && (
+        <div className="refreshing-card p-6 sm:p-8 space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                <Award className="w-5 h-5 text-emerald-600" />
+                Counselor Session Durations & Fee Schedule
+              </h3>
+              <p className="text-xs text-slate-500 mt-0.5 font-medium">
+                Configure offered session types (30-min, 60-min, or custom durations) and patient consultation fees.
+              </p>
+            </div>
+            <span className="text-xs font-extrabold text-sky-900 bg-sky-100 px-3 py-1 rounded-full border border-sky-300">
+              {mySessionTypes.filter((st) => st.is_active).length} Active Session Types
+            </span>
+          </div>
+
+          <form onSubmit={handleAddSessionType} className="p-4 bg-gradient-to-r from-sky-900 via-indigo-900 to-slate-900 text-white rounded-2xl flex flex-wrap items-center gap-3 shadow-md">
+            <input
+              type="text"
+              required
+              placeholder="Session Label (e.g. 45-Min Therapy)"
+              value={newStLabel}
+              onChange={(e) => setNewStLabel(e.target.value)}
+              className="px-3.5 py-2 bg-white/10 border border-white/20 text-white placeholder-white/60 rounded-xl text-xs focus:outline-none flex-1 min-w-[200px]"
+            />
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-sky-200">Duration (mins):</span>
+              <input
+                type="number"
+                required
+                min={15}
+                max={120}
+                value={newStDuration}
+                onChange={(e) => setNewStDuration(Number(e.target.value))}
+                className="w-20 px-3 py-2 bg-white/10 border border-white/20 text-white font-bold rounded-xl text-xs focus:outline-none"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-sky-200">Price (₹):</span>
+              <input
+                type="number"
+                required
+                min={0}
+                value={newStPrice}
+                onChange={(e) => setNewStPrice(Number(e.target.value))}
+                className="w-24 px-3 py-2 bg-white/10 border border-white/20 text-white font-bold rounded-xl text-xs focus:outline-none"
+              />
+            </div>
+            <button
+              type="submit"
+              className="px-4 py-2 bg-white text-sky-950 font-bold text-xs rounded-xl shadow-xs flex items-center gap-1.5 transition-all hover:bg-sky-50"
+            >
+              <Plus className="w-4 h-4 text-sky-700" /> Add Session Type
+            </button>
+          </form>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {mySessionTypes.map((st) => (
+              <div
+                key={st.id}
+                className={`p-5 rounded-2xl border transition-all flex items-center justify-between ${
+                  st.is_active
+                    ? 'bg-gradient-to-br from-sky-50/70 to-indigo-50/70 border-sky-300 shadow-sm'
+                    : 'bg-slate-50 border-slate-200 opacity-60'
+                }`}
+              >
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h4 className="text-sm font-extrabold text-slate-900">{st.label}</h4>
+                    <span className="px-2 py-0.5 bg-sky-100 text-sky-900 font-bold text-[10px] rounded-full border border-sky-300">
+                      {st.duration_minutes} Mins
+                    </span>
+                  </div>
+                  <p className="text-xl font-black text-emerald-700 mt-1">₹{st.price}</p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => toggleSessionType(st.id)}
+                  className={`px-3 py-1.5 rounded-xl font-bold text-xs transition-all border ${
+                    st.is_active
+                      ? 'bg-emerald-100 text-emerald-900 border-emerald-300'
+                      : 'bg-slate-200 text-slate-600 border-slate-300'
+                  }`}
+                >
+                  {st.is_active ? 'Active' : 'Disabled'}
                 </button>
               </div>
             ))}
