@@ -355,7 +355,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       created_at: new Date().toISOString(),
     };
 
-    setUsersList((prev) => [...prev, newCounselorUser]);
+    usersList.push(newCounselorUser);
     setUser(newCounselorUser);
 
     try {

@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useApp } from '@/context/AppContext';
 import { UserAvatar } from '../UserAvatar';
-import { UserProfile, CounselorApplication } from '@/lib/types';
+import { UserProfile } from '@/lib/types';
 import {
   ShieldCheck,
   CheckCircle,
@@ -41,9 +41,6 @@ export const AdminView: React.FC = () => {
     'counselors' | 'users' | 'moderation' | 'crisis' | 'analytics'
   >('counselors');
 
-  const [counselorStatusFilter, setCounselorStatusFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
-  const [inspectDocumentApp, setInspectDocumentApp] = useState<CounselorApplication | null>(null);
-
   const [userRoleFilter, setUserRoleFilter] = useState<'all' | 'counselor' | 'patient'>('all');
   const [userSearchQuery, setUserSearchQuery] = useState<string>('');
   const [deleteConfirmUser, setDeleteConfirmUser] = useState<UserProfile | null>(null);
@@ -53,8 +50,6 @@ export const AdminView: React.FC = () => {
   const [rejectionReasonInput, setRejectionReasonInput] = useState<string>('');
 
   const pendingCounselorApps = counselorApplications.filter((a) => a.status === 'pending');
-  const approvedCounselorApps = counselorApplications.filter((a) => a.status === 'approved');
-  const rejectedCounselorApps = counselorApplications.filter((a) => a.status === 'rejected');
   const pendingPosts = communityPosts.filter((p) => p.status === 'pending');
   const pendingComments = communityPosts.flatMap(
     (p) => p.comments?.filter((c) => c.status === 'pending') || []
@@ -143,7 +138,7 @@ export const AdminView: React.FC = () => {
       {activeAdminTab === 'counselors' && (
         <div className="space-y-6">
           <div className="refreshing-card p-6 sm:p-8 space-y-6">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+            <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
                   <ShieldCheck className="w-5 h-5 text-emerald-600" />
@@ -153,42 +148,9 @@ export const AdminView: React.FC = () => {
                   Review applicant credentials, state psychology license numbers, and Supabase Storage ID documents before approving live bookable status.
                 </p>
               </div>
-
-              {/* Status Filter Tabs */}
-              <div className="flex flex-wrap items-center gap-1.5 bg-slate-100 p-1 rounded-2xl">
-                <button
-                  onClick={() => setCounselorStatusFilter('all')}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                    counselorStatusFilter === 'all' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600'
-                  }`}
-                >
-                  All ({counselorApplications.length})
-                </button>
-                <button
-                  onClick={() => setCounselorStatusFilter('pending')}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                    counselorStatusFilter === 'pending' ? 'bg-white text-amber-900 shadow-xs' : 'text-slate-600'
-                  }`}
-                >
-                  Pending ({pendingCounselorApps.length})
-                </button>
-                <button
-                  onClick={() => setCounselorStatusFilter('approved')}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                    counselorStatusFilter === 'approved' ? 'bg-white text-emerald-950 shadow-xs' : 'text-slate-600'
-                  }`}
-                >
-                  Approved ({approvedCounselorApps.length})
-                </button>
-                <button
-                  onClick={() => setCounselorStatusFilter('rejected')}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                    counselorStatusFilter === 'rejected' ? 'bg-white text-rose-950 shadow-xs' : 'text-slate-600'
-                  }`}
-                >
-                  Rejected ({rejectedCounselorApps.length})
-                </button>
-              </div>
+              <span className="text-xs font-extrabold text-emerald-900 bg-emerald-100 px-3 py-1 rounded-full border border-emerald-300">
+                {counselorApplications.length} Total Applications
+              </span>
             </div>
 
             {counselorApplications.length === 0 ? (
@@ -196,118 +158,120 @@ export const AdminView: React.FC = () => {
                 No counselor applications submitted yet. Prospective counselors can apply via the sign-up modal.
               </div>
             ) : (
-              <div className="space-y-5">
-                {counselorApplications
-                  .filter((app) => counselorStatusFilter === 'all' || app.status === counselorStatusFilter)
-                  .map((app) => (
-                    <div
-                      key={app.id}
-                      className={`p-6 rounded-3xl border transition-all space-y-4 ${
-                        app.status === 'approved'
-                          ? 'bg-emerald-50/40 border-emerald-200'
-                          : app.status === 'rejected'
-                          ? 'bg-rose-50/40 border-rose-200'
-                          : 'bg-white border-slate-200 shadow-md ring-1 ring-slate-100'
-                      }`}
-                    >
-                      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-slate-100 pb-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 rounded-2xl bg-slate-800 text-white font-extrabold text-sm flex items-center justify-center shadow-md">
-                            {app.full_name.charAt(0)}
-                          </div>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <h4 className="text-base font-extrabold text-slate-900">{app.full_name}</h4>
-                              <span
-                                className={`text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${
-                                  app.status === 'approved'
-                                    ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
-                                    : app.status === 'rejected'
-                                    ? 'bg-rose-100 text-rose-800 border-rose-300'
-                                    : 'bg-amber-100 text-amber-900 border-amber-300'
-                                }`}
-                              >
-                                {app.status === 'pending' ? 'Pending Review' : app.status}
-                              </span>
-                            </div>
-                            <p className="text-xs text-slate-500 font-medium mt-0.5">
-                              {app.email} • Submitted {new Date(app.submitted_at).toLocaleDateString()}
-                            </p>
-                          </div>
+              <div className="space-y-4">
+                {counselorApplications.map((app) => (
+                  <div
+                    key={app.id}
+                    className={`p-6 rounded-3xl border transition-all space-y-4 ${
+                      app.status === 'approved'
+                        ? 'bg-emerald-50/40 border-emerald-200'
+                        : app.status === 'rejected'
+                        ? 'bg-rose-50/40 border-rose-200'
+                        : 'bg-white border-slate-200 shadow-md ring-1 ring-slate-100'
+                    }`}
+                  >
+                    <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-2xl bg-slate-800 text-white font-extrabold text-sm flex items-center justify-center shadow-md">
+                          {app.full_name.charAt(0)}
                         </div>
-
-                        {/* Always-visible Action Buttons */}
-                        <div className="flex items-center gap-2 shrink-0">
-                          {app.status !== 'approved' && (
-                            <button
-                              type="button"
-                              onClick={() => approveCounselorApplication(app.id)}
-                              className="px-5 py-2 emerald-gradient-btn text-white font-bold text-xs rounded-xl shadow-md flex items-center gap-1.5 transition-all"
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h4 className="text-base font-extrabold text-slate-900">{app.full_name}</h4>
+                            <span
+                              className={`text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${
+                                app.status === 'approved'
+                                  ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                                  : app.status === 'rejected'
+                                  ? 'bg-rose-100 text-rose-800 border-rose-300'
+                                  : 'bg-amber-100 text-amber-900 border-amber-300'
+                              }`}
                             >
-                              <CheckCircle className="w-4 h-4" /> Approve & License Live
-                            </button>
-                          )}
-
-                          {app.status !== 'rejected' && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setRejectionModalId(app.id);
-                                setRejectionReasonInput('');
-                              }}
-                              className="px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs rounded-xl border border-rose-200 flex items-center gap-1.5 transition-all"
-                            >
-                              <XCircle className="w-4 h-4" /> Reject
-                            </button>
-                          )}
-
-                          {app.status === 'approved' && (
-                            <span className="px-3 py-1 bg-emerald-100 text-emerald-900 font-extrabold text-[11px] rounded-xl border border-emerald-300">
-                              ✅ Live Bookable Counselor
+                              {app.status === 'pending' ? 'Pending Review' : app.status}
                             </span>
-                          )}
+                          </div>
+                          <p className="text-xs text-slate-500 font-medium mt-0.5">
+                            {app.email} • Submitted {new Date(app.submitted_at).toLocaleDateString()}
+                          </p>
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-                        <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200/80 space-y-1">
-                          <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">Degrees & Credentials</span>
-                          <p className="font-bold text-slate-900">{app.degree}</p>
-                          <p className="text-[11px] font-mono text-sky-800">Lic: {app.license_number}</p>
-                        </div>
-
-                        <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200/80 space-y-1">
-                          <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">Clinical Experience</span>
-                          <p className="font-bold text-slate-900">{app.years_of_experience} Years Practice</p>
-                          <p className="text-[11px] text-slate-600">Languages: {app.languages.join(', ')}</p>
-                        </div>
-
-                        <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200/80 space-y-1 flex flex-col justify-between">
-                          <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">Government ID Verification</span>
+                      {app.status !== 'approved' && (
+                        <div className="flex items-center gap-2 shrink-0">
                           <button
-                            type="button"
-                            onClick={() => setInspectDocumentApp(app)}
-                            className="w-full py-2 px-3 bg-emerald-100 hover:bg-emerald-200 text-emerald-950 border border-emerald-300 font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-all shadow-2xs"
+                            onClick={() => {
+                              setRejectionModalId(app.id);
+                              setRejectionReasonInput('');
+                            }}
+                            className="px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs rounded-xl border border-rose-200 flex items-center gap-1.5 transition-all"
                           >
-                            <Eye className="w-3.5 h-3.5 text-emerald-700" />
-                            Inspect ID Document ({app.id_document_name || 'Govt_ID.pdf'})
+                            <XCircle className="w-4 h-4" /> Reject
+                          </button>
+
+                          <button
+                            onClick={() => approveCounselorApplication(app.id)}
+                            className="px-5 py-2 emerald-gradient-btn text-white font-bold text-xs rounded-xl shadow-md flex items-center gap-1.5 transition-all"
+                          >
+                            <CheckCircle className="w-4 h-4" /> Approve & License Live
                           </button>
                         </div>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                      <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200/80 space-y-1">
+                        <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">Degrees & Credentials</span>
+                        <p className="font-bold text-slate-900">{app.degree}</p>
+                        <p className="text-[11px] font-mono text-sky-800">Lic: {app.license_number}</p>
                       </div>
 
-                      <div>
-                        <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block mb-1">Clinical Specialties:</span>
-                        <div className="flex flex-wrap gap-1.5">
-                          {app.specialties.map((spec, idx) => (
-                            <span
-                              key={idx}
-                              className="px-2.5 py-0.5 bg-sky-50 text-sky-900 border border-sky-200 rounded-full font-bold text-[11px]"
-                            >
-                              {spec}
-                            </span>
-                          ))}
-                        </div>
+                      <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200/80 space-y-1">
+                        <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">Clinical Experience</span>
+                        <p className="font-bold text-slate-900">{app.years_of_experience} Years Practice</p>
+                        <p className="text-[11px] text-slate-600">Languages: {app.languages.join(', ')}</p>
                       </div>
+
+                      <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200/80 space-y-2">
+                        <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">Government ID Document</span>
+                        {app.id_document_name && app.id_document_name !== 'Government_ID_Verification.pdf' ? (
+                          <>
+                            <p className="text-[11px] font-mono text-slate-700 truncate" title={app.id_document_name}>
+                              📄 {app.id_document_name}
+                            </p>
+                            {app.id_document_url ? (
+                              <a
+                                href={app.id_document_url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-1.5 font-bold text-emerald-700 hover:text-emerald-900 underline text-xs"
+                              >
+                                View / Download →
+                              </a>
+                            ) : (
+                              <span className="text-[10px] text-amber-600 font-medium">Document uploaded, link pending</span>
+                            )}
+                          </>
+                        ) : (
+                          <p className="text-[11px] text-amber-700 font-medium">
+                            ⚠ No document uploaded yet
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div>
+                      <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block mb-1">Clinical Specialties:</span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {app.specialties.map((spec, idx) => (
+                          <span
+                            key={idx}
+                            className="px-2.5 py-0.5 bg-sky-50 text-sky-900 border border-sky-200 rounded-full font-bold text-[11px]"
+                          >
+                            {spec}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
 
                     <p className="text-xs text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-100 italic">
                       &quot;{app.bio}&quot;
@@ -644,93 +608,6 @@ export const AdminView: React.FC = () => {
               >
                 Confirm Rejection
               </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Counselor ID Document Inspection Modal */}
-      {inspectDocumentApp && (
-        <div className="fixed inset-0 bg-slate-950/75 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-fadeIn">
-          <div className="bg-white rounded-3xl max-w-xl w-full p-6 sm:p-8 shadow-2xl border border-emerald-100 space-y-6">
-            <div className="flex items-start justify-between gap-4 border-b border-slate-100 pb-4">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold">
-                  <ShieldCheck className="w-6 h-6" />
-                </div>
-                <div>
-                  <h3 className="text-base font-extrabold text-slate-900">Government ID & License Verification Document</h3>
-                  <p className="text-xs text-slate-500 font-semibold mt-0.5">
-                    Applicant: <strong className="text-slate-800">{inspectDocumentApp.full_name}</strong> • Lic: <span className="font-mono text-emerald-800">{inspectDocumentApp.license_number}</span>
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => setInspectDocumentApp(null)}
-                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center font-bold"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="space-y-4 text-xs">
-              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-2">
-                <div className="flex items-center justify-between text-slate-700 font-bold">
-                  <span>Document File Name:</span>
-                  <span className="font-mono text-sky-800">{inspectDocumentApp.id_document_name || 'Govt_ID_Verification.pdf'}</span>
-                </div>
-                <div className="flex items-center justify-between text-slate-700">
-                  <span className="font-bold">Degrees / Credentials:</span>
-                  <span>{inspectDocumentApp.degree}</span>
-                </div>
-                <div className="flex items-center justify-between text-slate-700">
-                  <span className="font-bold">Storage Bucket Location:</span>
-                  <span className="font-mono text-emerald-800 text-[11px]">Supabase Storage / counselor-ids</span>
-                </div>
-              </div>
-
-              {/* Document Preview Card Container */}
-              <div className="p-6 bg-slate-900 text-white rounded-2xl border border-slate-800 text-center space-y-3">
-                <ShieldCheck className="w-10 h-10 text-emerald-400 mx-auto" />
-                <div>
-                  <p className="font-extrabold text-sm text-white">Government ID Verification Document</p>
-                  <p className="text-xs text-slate-400 mt-0.5">{inspectDocumentApp.id_document_name || 'Govt_ID_Verification.pdf'}</p>
-                </div>
-                <div className="pt-2">
-                  <a
-                    href={inspectDocumentApp.id_document_url || 'https://rxxlawptbtwrtxpbyoyt.supabase.co/storage/v1/object/public/counselor-docs/sample-id.pdf'}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs rounded-xl shadow-md transition-all"
-                  >
-                    Open / Download Original Document in New Tab ➔
-                  </a>
-                </div>
-              </div>
-            </div>
-
-            <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-3">
-              <button
-                type="button"
-                onClick={() => setInspectDocumentApp(null)}
-                className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl"
-              >
-                Close Preview
-              </button>
-
-              {inspectDocumentApp.status !== 'approved' && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    approveCounselorApplication(inspectDocumentApp.id);
-                    setInspectDocumentApp(null);
-                    alert(`Counselor application for "${inspectDocumentApp.full_name}" has been approved and licensed live!`);
-                  }}
-                  className="px-5 py-2.5 emerald-gradient-btn text-white font-extrabold text-xs rounded-xl shadow-md flex items-center gap-1.5"
-                >
-                  <CheckCircle className="w-4 h-4" /> Approve Counselor & License Live
-                </button>
-              )}
             </div>
           </div>
         </div>

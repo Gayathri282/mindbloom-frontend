@@ -1,45 +1,36 @@
-import { createClient } from '@supabase/supabase-js';
-
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://rxxlawptbtwrtxpbyoyt.supabase.co';
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ4eGxhd3B0YnR3cnR4cGJ5b3l0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYxMTI1NTgsImV4cCI6MjEwMTY4ODU1OH0.8c5f5a89_sample';
-
-export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
 /**
- * Uploads a file (Government ID, Professional Certifications) directly to Supabase Storage.
- * Never stores upload files on local disk.
+ * Document upload helper — routes all file uploads through the backend
+ * which uses the Supabase service role key (never exposed to the browser).
+ *
+ * The anon key cannot create/write buckets; only the service role can.
+ * Calling this directly from the client with the anon key always throws NoSuchBucket.
  */
-export async function uploadCounselorDocument(file: File, folder: string = 'counselor-docs'): Promise<{ url: string; name: string }> {
-  try {
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${fileExt}`;
-    const filePath = `${folder}/${fileName}`;
 
-    const { data, error } = await supabase.storage
-      .from('patient-docs')
-      .upload(filePath, file, {
-        cacheControl: '3600',
-        upsert: true,
-      });
+const BACKEND_URL =
+  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
-    if (error) {
-      console.warn('Supabase Storage direct upload fallback (using CDN url):', error);
-      // Fallback structured URL when bucket permissions are restricted in demo/local mode
-      const fallbackUrl = `${SUPABASE_URL}/storage/v1/object/public/counselor-docs/${fileName}`;
-      return { url: fallbackUrl, name: file.name };
-    }
+export async function uploadCounselorDocument(
+  file: File,
+  _folder: string = 'counselor-ids'
+): Promise<{ url: string; name: string }> {
+  const formData = new FormData();
+  formData.append('file', file);
 
-    const { data: publicUrlData } = supabase.storage
-      .from('patient-docs')
-      .getPublicUrl(filePath);
+  const response = await fetch(`${BACKEND_URL}/upload/counselor-doc`, {
+    method: 'POST',
+    body: formData,
+  });
 
-    return {
-      url: publicUrlData.publicUrl,
-      name: file.name,
-    };
-  } catch (err) {
-    console.warn('Supabase storage upload error:', err);
-    const mockUrl = `${SUPABASE_URL}/storage/v1/object/public/counselor-docs/doc_${Date.now()}_${file.name}`;
-    return { url: mockUrl, name: file.name };
+  if (!response.ok) {
+    const errText = await response.text().catch(() => 'Unknown error');
+    throw new Error(`Document upload failed (${response.status}): ${errText}`);
   }
+
+  const result = await response.json();
+
+  if (!result.success) {
+    throw new Error(result.error || 'Document upload returned failure status.');
+  }
+
+  return { url: result.url, name: result.name };
 }
