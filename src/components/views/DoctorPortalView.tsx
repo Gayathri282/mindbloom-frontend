@@ -106,6 +106,8 @@ export const DoctorPortalView: React.FC<DoctorPortalViewProps> = ({ setActiveTab
     sendPrescription,
     sessionTypes,
     addSessionType,
+    updateSessionType,
+    deleteSessionType,
     toggleSessionType,
   } = useApp();
 
@@ -134,7 +136,13 @@ export const DoctorPortalView: React.FC<DoctorPortalViewProps> = ({ setActiveTab
   // Session type inputs
   const [newStDuration, setNewStDuration] = useState<number>(45);
   const [newStPrice, setNewStPrice] = useState<number>(799);
-  const [newStLabel, setNewStLabel] = useState<string>('45-Minute Intermediate Session');
+  const [newStLabel, setNewStLabel] = useState<string>('45-Minute Therapy Session');
+
+  // Inline Session Type Editing State
+  const [editingStId, setEditingStId] = useState<string | null>(null);
+  const [editStLabel, setEditStLabel] = useState<string>('');
+  const [editStDuration, setEditStDuration] = useState<number>(30);
+  const [editStPrice, setEditStPrice] = useState<number>(500);
 
   const [replyText, setReplyText] = useState('');
 
@@ -869,53 +877,87 @@ export const DoctorPortalView: React.FC<DoctorPortalViewProps> = ({ setActiveTab
       {activeDoctorTab === 'session_types' && (
         <div className="space-y-6">
           <div className="refreshing-card p-6 sm:p-8 space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <h3 className="text-lg font-extrabold text-slate-900 flex items-center gap-2">
-                  <IndianRupee className="w-5 h-5 text-emerald-600" /> Session Rates &amp; Types
+                <h3 className="text-xl font-black text-slate-900 flex items-center gap-2">
+                  <IndianRupee className="w-5 h-5 text-emerald-600" /> Session Rates &amp; Durations Configuration
                 </h3>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Configure the session durations and fee schedule patients see when booking.
+                  Set fixed charges for 30 min, 45 min, 1 hour (60 min), or custom duration sessions for your patients.
                 </p>
               </div>
-              <span className="text-xs font-extrabold text-sky-900 bg-sky-100 px-3 py-1 rounded-full border border-sky-300">
-                {mySessionTypes.filter((st) => st.is_active).length} Active Types
+              <span className="text-xs font-extrabold text-sky-900 bg-sky-100 px-3.5 py-1.5 rounded-full border border-sky-300 self-start sm:self-auto">
+                {mySessionTypes.filter((st) => st.is_active).length} Active Session Options
               </span>
             </div>
 
-            {/* Add session type form */}
-            <form onSubmit={handleAddSessionType} className="p-5 bg-gradient-to-r from-sky-900 via-indigo-900 to-slate-900 text-white rounded-2xl shadow-lg">
-              <p className="text-xs font-bold text-sky-200 mb-3">+ Add Custom Session Type</p>
+            {/* Quick Session Presets Bar */}
+            <div className="p-4 bg-emerald-950/80 border border-emerald-500/30 rounded-2xl text-white space-y-2">
+              <p className="text-[11px] font-extrabold text-emerald-300 uppercase tracking-wider flex items-center gap-1.5">
+                <Zap className="w-3.5 h-3.5 text-amber-300" /> Quick Session Duration Presets
+              </p>
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => addSessionType(30, 500, '30-Minute Focus Session')}
+                  className="px-3.5 py-2 bg-emerald-500/30 hover:bg-emerald-500/50 text-emerald-200 text-xs font-bold rounded-xl border border-emerald-400/40 transition-all flex items-center gap-1.5"
+                >
+                  <Plus className="w-3.5 h-3.5 text-emerald-400" /> + 30 Min Session (₹500)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => addSessionType(45, 750, '45-Minute Therapy Session')}
+                  className="px-3.5 py-2 bg-teal-500/30 hover:bg-teal-500/50 text-teal-200 text-xs font-bold rounded-xl border border-teal-400/40 transition-all flex items-center gap-1.5"
+                >
+                  <Plus className="w-3.5 h-3.5 text-teal-300" /> + 45 Min Session (₹750)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => addSessionType(60, 1200, '60-Minute (1 Hour) Consultation')}
+                  className="px-3.5 py-2 bg-indigo-500/30 hover:bg-indigo-500/50 text-indigo-200 text-xs font-bold rounded-xl border border-indigo-400/40 transition-all flex items-center gap-1.5"
+                >
+                  <Plus className="w-3.5 h-3.5 text-indigo-300" /> + 1 Hour (60 Min) Session (₹1200)
+                </button>
+              </div>
+            </div>
+
+            {/* Add custom session type form */}
+            <form onSubmit={handleAddSessionType} className="p-5 bg-gradient-to-r from-sky-900 via-indigo-900 to-slate-900 text-white rounded-2xl shadow-lg space-y-3">
+              <p className="text-xs font-extrabold text-sky-200 flex items-center gap-1.5">
+                <Plus className="w-4 h-4 text-sky-400" /> Add Custom Session Type &amp; Charge
+              </p>
               <div className="flex flex-wrap items-end gap-3">
-                <div className="flex-1 min-w-[180px]">
-                  <label className="text-[10px] font-semibold text-white/60 uppercase block mb-1">Session Label</label>
+                <div className="flex-1 min-w-[200px]">
+                  <label className="text-[10px] font-semibold text-white/70 uppercase block mb-1">Session Title / Label</label>
                   <input
                     type="text"
                     required
-                    placeholder="e.g. 45-Min Therapy Session"
+                    placeholder="e.g. 45-Min Intensive Therapy"
                     value={newStLabel}
                     onChange={(e) => setNewStLabel(e.target.value)}
                     className="w-full px-3.5 py-2.5 bg-white/10 border border-white/20 text-white placeholder-white/40 rounded-xl text-xs focus:outline-none focus:border-white/50"
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] font-semibold text-white/60 uppercase block mb-1">Duration (min)</label>
-                  <input
-                    type="number"
-                    required
-                    min={15}
-                    max={120}
+                  <label className="text-[10px] font-semibold text-white/70 uppercase block mb-1">Duration (Min)</label>
+                  <select
                     value={newStDuration}
                     onChange={(e) => setNewStDuration(Number(e.target.value))}
-                    className="w-24 px-3 py-2.5 bg-white/10 border border-white/20 text-white font-bold rounded-xl text-xs focus:outline-none"
-                  />
+                    className="w-32 px-3 py-2.5 bg-slate-900 border border-white/20 text-white font-bold rounded-xl text-xs focus:outline-none"
+                  >
+                    <option value={30}>30 Minutes</option>
+                    <option value={45}>45 Minutes</option>
+                    <option value={60}>60 Min (1 Hour)</option>
+                    <option value={90}>90 Min (1.5 Hr)</option>
+                  </select>
                 </div>
                 <div>
-                  <label className="text-[10px] font-semibold text-white/60 uppercase block mb-1">Price (₹)</label>
+                  <label className="text-[10px] font-semibold text-white/70 uppercase block mb-1">Fixed Charge (₹)</label>
                   <input
                     type="number"
                     required
                     min={0}
+                    step={10}
                     value={newStPrice}
                     onChange={(e) => setNewStPrice(Number(e.target.value))}
                     className="w-28 px-3 py-2.5 bg-white/10 border border-white/20 text-white font-bold rounded-xl text-xs focus:outline-none"
@@ -923,52 +965,155 @@ export const DoctorPortalView: React.FC<DoctorPortalViewProps> = ({ setActiveTab
                 </div>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 bg-white text-sky-950 font-extrabold text-xs rounded-xl flex items-center gap-1.5 hover:bg-sky-50 transition-colors shrink-0"
+                  className="px-5 py-2.5 bg-emerald-400 hover:bg-emerald-300 text-slate-950 font-black text-xs rounded-xl flex items-center gap-1.5 transition-colors shrink-0 shadow"
                 >
-                  <Plus className="w-4 h-4 text-sky-700" /> Add Type
+                  <Plus className="w-4 h-4" /> Save Session Rate
                 </button>
               </div>
             </form>
 
-            {/* Session type cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Session type cards grid with inline editing */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {mySessionTypes.length === 0 ? (
-                <p className="text-xs text-slate-400 text-center col-span-2 py-8">No session types yet. Add one above.</p>
+                <div className="text-center py-10 text-slate-400 text-xs col-span-2 border-2 border-dashed border-slate-200 rounded-3xl space-y-1">
+                  <Clock className="w-8 h-8 text-slate-300 mx-auto" />
+                  <p>No session options configured yet.</p>
+                  <p className="text-[11px] text-slate-400 font-medium">Use the Quick Presets above to add 30 min, 45 min, or 1 hr session options.</p>
+                </div>
               ) : (
                 mySessionTypes.map((st) => (
                   <div
                     key={st.id}
-                    className={`p-5 rounded-2xl border flex items-center justify-between transition-all ${
+                    className={`p-5 rounded-2xl border transition-all ${
                       st.is_active
-                        ? 'bg-gradient-to-br from-sky-50/60 to-indigo-50/60 border-sky-200 shadow-sm'
+                        ? 'bg-white border-slate-200 shadow-sm hover:shadow-md'
                         : 'bg-slate-50 border-slate-200 opacity-60'
                     }`}
                   >
-                    <div>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <h4 className="text-sm font-extrabold text-slate-900">{st.label}</h4>
-                        <span className="px-2 py-0.5 bg-sky-100 text-sky-800 font-bold text-[10px] rounded-full border border-sky-200">
-                          {st.duration_minutes} min
-                        </span>
+                    {editingStId === st.id ? (
+                      /* Inline Session Rate Editor */
+                      <div className="space-y-3">
+                        <p className="text-[11px] font-extrabold text-emerald-700 uppercase tracking-wider flex items-center gap-1">
+                          <Pencil className="w-3.5 h-3.5" /> Edit Fixed Session Charge
+                        </p>
+                        <div>
+                          <label className="text-[10px] text-slate-500 font-bold block mb-1">Session Label</label>
+                          <input
+                            type="text"
+                            value={editStLabel}
+                            onChange={(e) => setEditStLabel(e.target.value)}
+                            className="w-full px-3 py-2 border border-emerald-300 bg-emerald-50/60 rounded-xl text-xs font-bold text-slate-900 focus:outline-none"
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="text-[10px] text-slate-500 font-bold block mb-1">Duration (Min)</label>
+                            <select
+                              value={editStDuration}
+                              onChange={(e) => setEditStDuration(Number(e.target.value))}
+                              className="w-full px-2 py-2 border border-emerald-300 bg-emerald-50/60 rounded-xl text-xs font-bold text-slate-900 focus:outline-none"
+                            >
+                              <option value={30}>30 Minutes</option>
+                              <option value={45}>45 Minutes</option>
+                              <option value={60}>60 Min (1 Hour)</option>
+                              <option value={90}>90 Min (1.5 Hr)</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="text-[10px] text-slate-500 font-bold block mb-1">Fixed Charge (₹)</label>
+                            <input
+                              type="number"
+                              min={0}
+                              value={editStPrice}
+                              onChange={(e) => setEditStPrice(Number(e.target.value))}
+                              className="w-full px-3 py-2 border border-emerald-300 bg-emerald-50/60 rounded-xl text-xs font-bold text-slate-900 focus:outline-none"
+                            />
+                          </div>
+                        </div>
+                        <div className="flex gap-2 pt-1">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              updateSessionType(st.id, {
+                                label: editStLabel,
+                                duration_minutes: editStDuration,
+                                price: editStPrice,
+                              });
+                              setEditingStId(null);
+                            }}
+                            className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1 transition-colors"
+                          >
+                            <Check className="w-3.5 h-3.5" /> Save Rate
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setEditingStId(null)}
+                            className="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl flex items-center justify-center gap-1 transition-colors"
+                          >
+                            <X className="w-3.5 h-3.5" /> Cancel
+                          </button>
+                        </div>
                       </div>
-                      <p className="text-xl font-black text-emerald-700 mt-1">₹{st.price}</p>
-                    </div>
+                    ) : (
+                      /* Display Session Rate Card */
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="space-y-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h4 className="text-sm font-extrabold text-slate-900">{st.label}</h4>
+                            <span className="px-2.5 py-0.5 bg-sky-100 text-sky-900 font-extrabold text-[10px] rounded-full border border-sky-300">
+                              {st.duration_minutes === 60 ? '1 Hour (60m)' : `${st.duration_minutes} min`}
+                            </span>
+                          </div>
+                          <div className="flex items-baseline gap-1 pt-1">
+                            <span className="text-2xl font-black text-emerald-700">₹{st.price}</span>
+                            <span className="text-[11px] text-slate-400 font-semibold">fixed rate</span>
+                          </div>
+                          <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full inline-block mt-2 ${
+                            st.is_active
+                              ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                              : 'bg-amber-100 text-amber-900 border border-amber-200'
+                          }`}>
+                            {st.is_active ? '✅ Available for Booking' : '⏸️ Paused'}
+                          </span>
+                        </div>
 
-                    <button
-                      type="button"
-                      onClick={() => toggleSessionType(st.id)}
-                      className={`px-3.5 py-2 rounded-xl font-extrabold text-xs transition-all border flex items-center gap-1.5 ${
-                        st.is_active
-                          ? 'bg-emerald-100 text-emerald-900 border-emerald-300 hover:bg-emerald-200'
-                          : 'bg-slate-200 text-slate-600 border-slate-300 hover:bg-slate-300'
-                      }`}
-                    >
-                      {st.is_active ? (
-                        <><CheckCircle className="w-3.5 h-3.5" /> Active</>
-                      ) : (
-                        <><AlertCircle className="w-3.5 h-3.5" /> Disabled</>
-                      )}
-                    </button>
+                        <div className="flex flex-col gap-1.5 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingStId(st.id);
+                              setEditStLabel(st.label);
+                              setEditStDuration(st.duration_minutes);
+                              setEditStPrice(st.price);
+                            }}
+                            className="p-2 rounded-xl text-slate-500 hover:text-sky-600 hover:bg-sky-50 transition-colors border border-transparent hover:border-sky-200"
+                            title="Edit session duration or fixed charge"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => toggleSessionType(st.id)}
+                            className={`p-2 rounded-xl transition-colors border ${
+                              st.is_active
+                                ? 'text-emerald-600 hover:bg-emerald-50 border-emerald-200'
+                                : 'text-slate-400 hover:bg-slate-100 border-slate-200'
+                            }`}
+                            title={st.is_active ? 'Pause session type' : 'Activate session type'}
+                          >
+                            <CheckCircle className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => deleteSessionType(st.id)}
+                            className="p-2 rounded-xl text-rose-500 hover:bg-rose-50 border border-transparent hover:border-rose-200 transition-colors"
+                            title="Delete session type"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))
               )}

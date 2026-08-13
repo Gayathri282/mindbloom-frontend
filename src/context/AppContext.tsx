@@ -119,6 +119,8 @@ interface AppContextType {
   rejectCounselorApplication: (applicationId: string, reason: string) => void;
   refreshCounselorApplications: () => Promise<void>;
   addSessionType: (durationMinutes: number, price: number, label: string) => void;
+  updateSessionType: (id: string, updates: Partial<SessionType>) => void;
+  deleteSessionType: (id: string) => void;
   toggleSessionType: (sessionTypeId: string) => void;
 }
 
@@ -212,16 +214,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         id: 'st-30m-therapist-1',
         counselor_id: 'therapist-1',
         duration_minutes: 30,
-        price: 750,
+        price: 500,
         label: '30-Minute Focus Session',
+        is_active: true,
+      },
+      {
+        id: 'st-45m-therapist-1',
+        counselor_id: 'therapist-1',
+        duration_minutes: 45,
+        price: 750,
+        label: '45-Minute Intermediate Therapy',
         is_active: true,
       },
       {
         id: 'st-60m-therapist-1',
         counselor_id: 'therapist-1',
         duration_minutes: 60,
-        price: 1400,
-        label: '60-Minute Comprehensive Session',
+        price: 1200,
+        label: '60-Minute (1 Hour) Comprehensive Consultation',
         is_active: true,
       },
     ];
@@ -497,10 +507,43 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  const toggleSessionType = (sessionTypeId: string) => {
+  const updateSessionType = async (id: string, updates: Partial<SessionType>) => {
     setSessionTypes((prev) =>
-      prev.map((st) => (st.id === sessionTypeId ? { ...st, is_active: !st.is_active } : st))
+      prev.map((st) => (st.id === id ? { ...st, ...updates } : st))
     );
+
+    try {
+      const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+      await fetch(`${backendUrl}/session-types/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates),
+      });
+      refreshSessionTypes();
+    } catch (e) {
+      console.warn('Backend session type update notice:', e);
+    }
+  };
+
+  const deleteSessionType = async (id: string) => {
+    setSessionTypes((prev) => prev.filter((st) => st.id !== id));
+
+    try {
+      const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+      await fetch(`${backendUrl}/session-types/${id}`, {
+        method: 'DELETE',
+      });
+      refreshSessionTypes();
+    } catch (e) {
+      console.warn('Backend session type delete notice:', e);
+    }
+  };
+
+  const toggleSessionType = (sessionTypeId: string) => {
+    const target = sessionTypes.find((st) => st.id === sessionTypeId);
+    if (target) {
+      updateSessionType(sessionTypeId, { is_active: !target.is_active });
+    }
   };
 
   const submitCounselorApplication = async (
@@ -1310,6 +1353,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         rejectCounselorApplication,
         refreshCounselorApplications,
         addSessionType,
+        updateSessionType,
+        deleteSessionType,
         toggleSessionType,
       }}
     >
