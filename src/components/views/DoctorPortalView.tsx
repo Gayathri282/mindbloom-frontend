@@ -464,7 +464,7 @@ export const DoctorPortalView: React.FC<DoctorPortalViewProps> = ({ setActiveTab
                                 <Video className="w-4 h-4 text-emerald-200 animate-pulse" /> Start &amp; Join Session
                               </button>
                               <button
-                                onClick={() => notifyPatientAgain()}
+                                onClick={() => notifyPatientAgain(appt.id)}
                                 className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl flex items-center gap-2 transition-colors"
                               >
                                 <Bell className="w-3.5 h-3.5" /> Remind Patient

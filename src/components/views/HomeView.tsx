@@ -138,7 +138,26 @@ export const HomeView: React.FC<HomeViewProps> = ({ setActiveTab }) => {
                       </p>
                       <div className="flex items-center gap-2 mt-2 text-xs font-bold text-sky-700">
                         <Clock className="w-4 h-4 text-sky-600" />
-                        <span>Scheduled Today at 2:00 PM (50 mins)</span>
+                        <span>
+                          {upcomingSession.scheduled_at ? (
+                            <>
+                              Scheduled for{' '}
+                              {new Date(upcomingSession.scheduled_at).toLocaleDateString('en-US', {
+                                weekday: 'short',
+                                month: 'short',
+                                day: 'numeric',
+                                year: 'numeric',
+                              })}{' '}
+                              at{' '}
+                              {new Date(upcomingSession.scheduled_at).toLocaleTimeString('en-US', {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })}
+                            </>
+                          ) : (
+                            'Scheduled Consultation Session'
+                          )}
+                        </span>
                       </div>
                     </div>
                   </div>

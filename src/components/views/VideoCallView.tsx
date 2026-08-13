@@ -46,7 +46,18 @@ export const VideoCallView: React.FC<{ setActiveTab?: (tab: string) => void }> =
   const remoteVideoRef = useRef<HTMLVideoElement | null>(null);
   const rtcManagerRef = useRef<MindBloomWebRTC | null>(null);
 
-  const currentAppt = activeSession || appointments[0];
+  const activeId = activeSession ? activeSession.id : undefined;
+  const currentAppt =
+    activeSession ||
+    appointments.find((a) => a.id === activeId) ||
+    appointments.find(
+      (a: any) =>
+        (user.role === 'patient' && (a.patient_id === user.id || a.patient_email === user.email)) ||
+        ((user.role === 'therapist' || user.role === 'counselor') && (a.therapist_id === user.id || a.therapist_email === user.email))
+    ) ||
+    appointments[0];
+
+  const roomId = currentAppt ? `mindbloom-room-${currentAppt.id}` : 'mindbloom-room-default';
   const [noteContent, setNoteContent] = useState(sessionNotes[currentAppt?.id || ''] || '');
   const [docPreviewUrl, setDocPreviewUrl] = useState<string | null>(null);
 
@@ -175,13 +186,13 @@ export const VideoCallView: React.FC<{ setActiveTab?: (tab: string) => void }> =
           <div className="w-3 h-3 rounded-full bg-emerald-500 animate-ping"></div>
           <div>
             <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-              Encrypted Free WebRTC Room
+              Encrypted WebRTC Room
               <span className="px-2.5 py-0.5 bg-emerald-50 text-emerald-700 text-[11px] font-semibold rounded-full border border-emerald-200">
                 STUN Connected
               </span>
             </h3>
-            <p className="text-xs text-slate-500">
-              Consulting: {user.role === 'therapist' ? 'Maya Lin (Patient)' : 'Dr. Sarah Jenkins, Psy.D.'}
+            <p className="text-xs text-slate-600 font-semibold mt-0.5">
+              Room ID: <code className="font-mono bg-sky-100 text-sky-900 px-1.5 py-0.5 rounded text-[11px] font-bold">{roomId}</code> • Consulting: {user.role === 'therapist' || user.role === 'counselor' ? (currentAppt?.patient_name || 'Patient') : (currentAppt?.therapist_name || 'Consulting Psychologist')}
             </p>
           </div>
         </div>
@@ -197,7 +208,7 @@ export const VideoCallView: React.FC<{ setActiveTab?: (tab: string) => void }> =
                   <VideoIcon className="w-3.5 h-3.5" /> Start Call
                 </button>
                 <button
-                  onClick={notifyPatientAgain}
+                  onClick={() => currentAppt && notifyPatientAgain(currentAppt.id)}
                   className="px-3.5 py-1.5 bg-sky-50 hover:bg-sky-100 text-sky-900 border border-sky-200 font-semibold text-xs rounded-xl flex items-center gap-1.5"
                 >
                   <Bell className="w-3.5 h-3.5 text-sky-600" /> Ring Patient

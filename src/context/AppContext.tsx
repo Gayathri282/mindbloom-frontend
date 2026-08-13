@@ -70,7 +70,7 @@ interface AppContextType {
   patientJoinedCall: boolean;
   therapistJoinedCall: boolean;
   startDoctorCall: (appointmentId: string) => void;
-  notifyPatientAgain: () => void;
+  notifyPatientAgain: (appointmentId?: string) => void;
   acceptIncomingCall: () => void;
   declineIncomingCall: () => void;
   joinSessionAsTherapist: (appointmentId: string) => void;
@@ -869,10 +869,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     );
   };
 
-  const notifyPatientAgain = () => {
-    if (!activeIncomingCall) return;
-    // Re-trigger alert notification
-    setActiveIncomingCall({ ...activeIncomingCall });
+  const notifyPatientAgain = (targetApptId?: string) => {
+    const appt = targetApptId
+      ? appointments.find((a) => a.id === targetApptId)
+      : activeSession || activeIncomingCall || appointments.find((a) => a.status === 'scheduled' || a.status === 'in_progress');
+
+    if (!appt) return;
+    setActiveIncomingCall({ ...appt });
   };
 
   const acceptIncomingCall = () => {
