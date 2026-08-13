@@ -143,17 +143,35 @@ export const BookingView: React.FC<BookingViewProps> = ({ setActiveTab }) => {
 
   const selectedCounselor = approvedCounselors.find((c) => c.id === selectedCounselorId) || approvedCounselors[0];
 
-  const rawSessionTypes = sessionTypes.filter(
-    (st) => (st.counselor_id === selectedCounselor?.id || st.counselor_id === 'therapist-1') && st.is_active
-  );
+  const rawSessionTypes = sessionTypes.filter((st) => {
+    if (!selectedCounselor) return false;
+    if (st.counselor_id === selectedCounselor.id) return true;
+    if (selectedCounselor.email && st.counselor_id.toLowerCase() === selectedCounselor.email.toLowerCase()) return true;
+    const cleanSt = (st.counselor_id || '').replace(/^app-user-/, '').replace(/^counselor-app-/, '');
+    const cleanC = selectedCounselor.id.replace(/^app-user-/, '').replace(/^counselor-app-/, '');
+    if (cleanSt === cleanC) return true;
+    if (selectedCounselor.id === 'therapist-1' || selectedCounselor.email === 'sarah.jenkins@mindbloom.app') {
+      return st.counselor_id === 'therapist-1' || st.counselor_id === 'patient-guest';
+    }
+    return false;
+  }).filter((st) => st.is_active);
+
   const counselorSessionTypes = rawSessionTypes;
 
   const getCounselorStartingPrice = (counselorId: string, defaultPrice?: number) => {
-    const types = sessionTypes.filter((st) => (st.counselor_id === counselorId || st.counselor_id === 'therapist-1') && st.is_active && st.price > 0);
+    const counselor = approvedCounselors.find((c) => c.id === counselorId);
+    const types = sessionTypes.filter((st) => {
+      if (st.counselor_id === counselorId) return true;
+      if (counselor?.email && st.counselor_id.toLowerCase() === counselor.email.toLowerCase()) return true;
+      const cleanSt = (st.counselor_id || '').replace(/^app-user-/, '').replace(/^counselor-app-/, '');
+      const cleanC = (counselorId || '').replace(/^app-user-/, '').replace(/^counselor-app-/, '');
+      return cleanSt === cleanC;
+    }).filter((st) => st.is_active && st.price !== undefined && st.price >= 0);
+
     if (types.length > 0) {
       return Math.min(...types.map((st) => st.price));
     }
-    return defaultPrice || 750;
+    return defaultPrice || 10;
   };
 
   const selectedSessionTypeObj =
@@ -193,7 +211,7 @@ export const BookingView: React.FC<BookingViewProps> = ({ setActiveTab }) => {
   const counselorSlots = openSlots;
   const selectedSlotObj = counselorSlots.find((s) => s.id === selectedSlotId) || counselorSlots[0];
 
-  const currentPrice = selectedSessionTypeObj?.price || 500;
+  const currentPrice = selectedSessionTypeObj?.price !== undefined ? selectedSessionTypeObj.price : 10;
 
   // Step 1: Browse Profile, Step 2: Dedicated Slot Selection Screen
   const [bookingStep, setBookingStep] = useState<'browse' | 'select_slot'>('browse');

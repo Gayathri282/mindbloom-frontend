@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useApp } from '@/context/AppContext';
+import { getEffectiveAppointmentStatus } from '@/lib/slotUtils';
 import {
   Calendar,
   Video,
@@ -26,9 +27,18 @@ export const HomeView: React.FC<HomeViewProps> = ({ setActiveTab }) => {
   const { user, appointments, startDoctorCall, carePlan } = useApp();
   const [selectedMood, setSelectedMood] = useState<string | null>(null);
 
-  const upcomingSession = appointments.find(
-    (a) => a.status === 'scheduled' || a.status === 'in_progress'
-  );
+  const upcomingSession = appointments.find((a) => {
+    const status = getEffectiveAppointmentStatus(a);
+    return (
+      (status === 'scheduled' || status === 'in_progress') &&
+      (a.patient_id === user.id || a.patient_email === user.email || user.role === 'patient')
+    );
+  });
+
+  const historySessions = appointments.filter((a) => {
+    const status = getEffectiveAppointmentStatus(a);
+    return status === 'completed' || status === 'missed' || status === 'cancelled';
+  });
 
   const moods = [
     { label: 'Calm', emoji: '😌', bg: 'bg-sky-50 text-sky-800 border-sky-200 hover:bg-sky-100/70' },
@@ -177,6 +187,96 @@ export const HomeView: React.FC<HomeViewProps> = ({ setActiveTab }) => {
                 >
                   View Available Slots <ArrowRight className="w-3.5 h-3.5" />
                 </button>
+              </div>
+            )}
+          </div>
+
+          {/* Consultation History Card */}
+          <div className="refreshing-card p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <Clock className="w-5 h-5 text-sky-600" />
+                Consultation History &amp; Previous Sessions
+              </h3>
+              <span className="text-xs font-bold text-slate-500">
+                {historySessions.length} Past Records
+              </span>
+            </div>
+
+            {historySessions.length === 0 ? (
+              <div className="p-4 bg-slate-50 border border-dashed border-slate-200 rounded-2xl text-center text-xs text-slate-400 font-medium">
+                No past or missed consultations on record.
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {historySessions.map((session) => {
+                  const effectiveStatus = getEffectiveAppointmentStatus(session);
+                  const isMissed = effectiveStatus === 'missed';
+                  const isCompleted = effectiveStatus === 'completed';
+
+                  return (
+                    <div
+                      key={session.id}
+                      className={`p-4 rounded-2xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+                        isMissed
+                          ? 'bg-rose-50/60 border-rose-200'
+                          : isCompleted
+                          ? 'bg-emerald-50/60 border-emerald-200'
+                          : 'bg-slate-50 border-slate-200'
+                      }`}
+                    >
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <h4 className="text-xs font-extrabold text-slate-900">
+                            {session.therapist_name || 'Consulting Psychologist'}
+                          </h4>
+                          <span
+                            className={`px-2.5 py-0.5 font-extrabold text-[10px] rounded-full border ${
+                              isMissed
+                                ? 'bg-rose-100 text-rose-800 border-rose-300'
+                                : isCompleted
+                                ? 'bg-emerald-100 text-emerald-900 border-emerald-300'
+                                : 'bg-slate-200 text-slate-700 border-slate-300'
+                            }`}
+                          >
+                            {isMissed
+                              ? '🔴 Missed Consultation'
+                              : isCompleted
+                              ? '✅ Previous Consultation'
+                              : 'Cancelled'}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 font-medium">
+                          Date: {new Date(session.scheduled_at).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
+                        </p>
+                        {isMissed && (
+                          <p className="text-[10px] text-rose-700 font-semibold mt-1">
+                            Notice: Missed session. No reminder sent to patient. You can book a new slot anytime.
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="shrink-0 flex items-center gap-2">
+                        {isCompleted && (
+                          <button
+                            onClick={() => setActiveTab('careplan')}
+                            className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl transition-all"
+                          >
+                            View Rx / Care Plan
+                          </button>
+                        )}
+                        {isMissed && (
+                          <button
+                            onClick={() => setActiveTab('booking')}
+                            className="px-3.5 py-1.5 bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs rounded-xl transition-all"
+                          >
+                            Book New Slot
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>

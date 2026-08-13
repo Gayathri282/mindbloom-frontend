@@ -86,3 +86,36 @@ export function isSlotExpired(slot: Partial<AvailabilitySlot>): boolean {
 
   return false;
 }
+
+/**
+ * Calculates effective appointment status based on time elapsed, join history, and recorded status.
+ * Ensures completed consultations show as 'completed', missed consultations as 'missed',
+ * and past unjoined appointments are classified as 'missed' without triggering reminders.
+ */
+export function getEffectiveAppointmentStatus(appt: {
+  status: string;
+  scheduled_at?: string;
+  therapist_joined_at?: string;
+  patient_joined_at?: string;
+  completed_at?: string;
+}): 'scheduled' | 'in_progress' | 'completed' | 'missed' | 'cancelled' {
+  if (!appt) return 'missed';
+  if (appt.status === 'completed' || appt.completed_at) return 'completed';
+  if (appt.status === 'missed') return 'missed';
+  if (appt.status === 'cancelled') return 'cancelled';
+  if (appt.status === 'in_progress') return 'in_progress';
+
+  if (appt.scheduled_at) {
+    const scheduledTime = new Date(appt.scheduled_at).getTime();
+    if (!isNaN(scheduledTime)) {
+      const now = Date.now();
+      const gracePeriodMs = 30 * 60 * 1000; // 30-minute grace window past start time
+      const bothJoined = !!appt.therapist_joined_at && !!appt.patient_joined_at;
+
+      if (bothJoined) return 'completed';
+      if (now > scheduledTime + gracePeriodMs) return 'missed';
+    }
+  }
+
+  return (appt.status as any) || 'scheduled';
+}
