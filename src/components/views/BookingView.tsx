@@ -48,7 +48,7 @@ const SPECIALTY_FILTERS = [
 ];
 
 export const BookingView: React.FC<BookingViewProps> = ({ setActiveTab }) => {
-  const { user, usersList, slots, addSlot, removeSlot, bookAppointment, sessionTypes, counselorApplications } = useApp();
+  const { user, usersList, slots, refreshSlots, addSlot, removeSlot, bookAppointment, sessionTypes, counselorApplications } = useApp();
 
   // Search & Filter State
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -269,12 +269,17 @@ export const BookingView: React.FC<BookingViewProps> = ({ setActiveTab }) => {
         });
         setIsPaymentProcessing(false);
       } else {
-        throw new Error(data.error || 'Failed to generate Razorpay Payment Link');
+        setPaymentError(
+          data.error || 'This slot was just booked by another patient. Please choose another available time slot.'
+        );
+        setIsPaymentProcessing(false);
+        refreshSlots();
       }
     } catch (err: any) {
       console.error('Error creating Razorpay Payment Link:', err);
-      setPaymentError(err.message || 'Unable to generate Razorpay Payment Link. Please try again.');
+      setPaymentError(err.message || 'This slot was just booked by another patient. Please choose another available time slot.');
       setIsPaymentProcessing(false);
+      refreshSlots();
     }
   };
 

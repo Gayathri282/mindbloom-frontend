@@ -118,7 +118,10 @@ export const DoctorPortalView: React.FC<DoctorPortalViewProps> = ({ setActiveTab
 
   const [docPreviewUrl, setDocPreviewUrl] = useState<string | null>(null);
 
-  const upcomingAppt = appointments.find((a) => a.status === 'scheduled' || a.status === 'in_progress') || appointments[0];
+  const upcomingAppt = appointments.find((a) => {
+    const status = getEffectiveAppointmentStatus(a);
+    return status === 'scheduled' || status === 'in_progress';
+  });
   const [currentNotes, setCurrentNotes] = useState<string>(
     sessionNotes[upcomingAppt?.id || ''] || ''
   );

@@ -49,6 +49,7 @@ interface AppContextType {
   
   // Booking & Slots
   slots: AvailabilitySlot[];
+  refreshSlots: () => void;
   addSlot: (dayLabel: string, timeLabel: string) => void;
   removeSlot: (slotId: string) => Promise<boolean> | boolean;
   appointments: Appointment[];
@@ -749,11 +750,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     try {
       const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
-      await fetch(`${backendUrl}/slots`, {
+      const res = await fetch(`${backendUrl}/slots`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newSlot),
       });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        alert(`⚠️ Backend slot creation error: ${data.error || 'Cannot create slot.'}`);
+        setSlots((prev) => prev.filter((s) => s.id !== newSlot.id));
+        return;
+      }
       refreshSlots();
     } catch (e) {
       console.warn('Backend slot publish notice:', e);
@@ -1256,6 +1263,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         loginUser,
         signupUser,
         slots,
+        refreshSlots,
         addSlot,
         removeSlot,
         appointments,
