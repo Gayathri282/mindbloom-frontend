@@ -33,6 +33,7 @@ import {
 } from '@/lib/mockData';
 import { detectCrisis } from '@/lib/crisisDetection';
 import { getHumanAiResponse } from '@/lib/aiBotEngine';
+import { parseSlotDateTime, isSlotExpired } from '@/lib/slotUtils';
 
 interface AppContextType {
   user: UserProfile;
@@ -156,12 +157,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   
   const [slots, setSlots] = useState<AvailabilitySlot[]>(() => {
     const saved = getSavedState();
-    if (saved?.slots && Array.isArray(saved.slots) && saved.slots.length > 0) {
-      const existingIds = new Set(saved.slots.map((s: AvailabilitySlot) => s.id));
-      const missingInitial = INITIAL_SLOTS.filter((s) => !existingIds.has(s.id));
-      return [...saved.slots, ...missingInitial];
+    if (saved?.slots && Array.isArray(saved.slots)) {
+      const deletedSet = new Set(saved.deletedSlotIds || []);
+      return saved.slots.filter((s: AvailabilitySlot) => !deletedSet.has(s.id));
     }
-    return INITIAL_SLOTS;
+    return [];
   });
   const [appointments, setAppointments] = useState<Appointment[]>(() => {
     const saved = getSavedState();
@@ -206,35 +206,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [sessionTypes, setSessionTypes] = useState<SessionType[]>(() => {
     const saved = getSavedState();
-    if (saved?.sessionTypes && Array.isArray(saved.sessionTypes) && saved.sessionTypes.length > 0) {
-      return saved.sessionTypes;
-    }
-    return [
-      {
-        id: 'st-30m-therapist-1',
-        counselor_id: 'therapist-1',
-        duration_minutes: 30,
-        price: 500,
-        label: '30-Minute Focus Session',
-        is_active: true,
-      },
-      {
-        id: 'st-45m-therapist-1',
-        counselor_id: 'therapist-1',
-        duration_minutes: 45,
-        price: 750,
-        label: '45-Minute Intermediate Therapy',
-        is_active: true,
-      },
-      {
-        id: 'st-60m-therapist-1',
-        counselor_id: 'therapist-1',
-        duration_minutes: 60,
-        price: 1200,
-        label: '60-Minute (1 Hour) Comprehensive Consultation',
-        is_active: true,
-      },
-    ];
+    return saved?.sessionTypes || [];
   });
 
   // Deleted Slots Tracking
@@ -336,24 +308,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data.slots)) {
-          setSlots((prev) => {
-            const deletedSet = new Set(deletedSlotIds);
-            const map = new Map<string, AvailabilitySlot>();
-
-            // 1. Authoritative backend slots (excluding deleted ones)
-            data.slots.forEach((s: AvailabilitySlot) => {
-              if (!deletedSet.has(s.id)) map.set(s.id, s);
-            });
-
-            // 2. Local-only slots (excluding deleted ones)
-            prev.forEach((s) => {
-              if (!deletedSet.has(s.id) && !map.has(s.id)) {
-                map.set(s.id, s);
-              }
-            });
-
-            return Array.from(map.values());
-          });
+          const saved = getSavedState();
+          const deletedSet = new Set([...deletedSlotIds, ...(saved?.deletedSlotIds || [])]);
+          const validSlots = data.slots.filter((s: AvailabilitySlot) => !deletedSet.has(s.id));
+          setSlots(validSlots);
         }
       }
     } catch (e) {
@@ -368,15 +326,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const res = await fetch(`${backendUrl}/session-types`);
       if (res.ok) {
         const data = await res.json();
-        if (Array.isArray(data.sessionTypes) && data.sessionTypes.length > 0) {
-          setSessionTypes((prev) => {
-            const map = new Map<string, SessionType>();
-            data.sessionTypes.forEach((st: SessionType) => map.set(st.id, st));
-            prev.forEach((st) => {
-              if (!map.has(st.id)) map.set(st.id, st);
-            });
-            return Array.from(map.values());
-          });
+        if (Array.isArray(data.sessionTypes)) {
+          setSessionTypes(data.sessionTypes);
         }
       }
     } catch (e) {
@@ -781,13 +732,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Availability Slots
   const addSlot = async (dayLabel: string, timeLabel: string) => {
     const counselorId = (user.role === 'admin' || user.id === 'admin-1') ? 'therapist-1' : user.id;
+    const startDateTime = parseSlotDateTime(dayLabel, timeLabel);
     const newSlot: AvailabilitySlot = {
       id: `slot-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
       therapist_id: counselorId,
       therapist_email: user.email,
       therapist_name: user.full_name,
-      start_time: new Date().toISOString(),
-      end_time: new Date(Date.now() + 50 * 60 * 1000).toISOString(),
+      start_time: startDateTime.toISOString(),
+      end_time: new Date(startDateTime.getTime() + 50 * 60 * 1000).toISOString(),
       is_booked: false,
       day_label: dayLabel || 'Today',
       time_label: timeLabel || '11:00 AM - 11:50 AM',

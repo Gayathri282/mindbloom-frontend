@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
 import { UserAvatar } from '@/components/UserAvatar';
 import { UserProfile, SessionType } from '@/lib/types';
+import { isSlotExpired } from '@/lib/slotUtils';
 import {
   Search,
   Filter,
@@ -145,27 +146,7 @@ export const BookingView: React.FC<BookingViewProps> = ({ setActiveTab }) => {
   const rawSessionTypes = sessionTypes.filter(
     (st) => (st.counselor_id === selectedCounselor?.id || st.counselor_id === 'therapist-1') && st.is_active
   );
-  const counselorSessionTypes =
-    rawSessionTypes.length > 0
-      ? rawSessionTypes
-      : [
-          {
-            id: `st-30m-${selectedCounselor?.id}`,
-            counselor_id: selectedCounselor?.id || 'therapist-1',
-            duration_minutes: 30,
-            price: selectedCounselor?.starting_price || 499,
-            label: '30-Minute Focus Session',
-            is_active: true,
-          },
-          {
-            id: `st-60m-${selectedCounselor?.id}`,
-            counselor_id: selectedCounselor?.id || 'therapist-1',
-            duration_minutes: 60,
-            price: (selectedCounselor?.starting_price || 499) * 2 - 100,
-            label: '60-Minute Comprehensive Consultation',
-            is_active: true,
-          },
-        ];
+  const counselorSessionTypes = rawSessionTypes;
 
   const getCounselorStartingPrice = (counselorId: string, defaultPrice?: number) => {
     const types = sessionTypes.filter((st) => (st.counselor_id === counselorId || st.counselor_id === 'therapist-1') && st.is_active && st.price > 0);
@@ -208,11 +189,11 @@ export const BookingView: React.FC<BookingViewProps> = ({ setActiveTab }) => {
     return false;
   });
 
-  const openSlots = specificSlots.filter((s) => !s.is_booked);
-  const counselorSlots = openSlots.length > 0 ? openSlots : (specificSlots.length > 0 ? specificSlots : slots.filter((s) => !s.is_booked));
+  const openSlots = specificSlots.filter((s) => !s.is_booked && !isSlotExpired(s));
+  const counselorSlots = openSlots;
   const selectedSlotObj = counselorSlots.find((s) => s.id === selectedSlotId) || counselorSlots[0];
 
-  const currentPrice = selectedSessionTypeObj?.price || 750;
+  const currentPrice = selectedSessionTypeObj?.price || 500;
 
   // Step 1: Browse Profile, Step 2: Dedicated Slot Selection Screen
   const [bookingStep, setBookingStep] = useState<'browse' | 'select_slot'>('browse');
@@ -228,6 +209,13 @@ export const BookingView: React.FC<BookingViewProps> = ({ setActiveTab }) => {
 
   const handleInitiateRazorpayPayment = async () => {
     if (!selectedSlotId || !selectedCounselor) return;
+
+    if (!selectedSlotObj || isSlotExpired(selectedSlotObj)) {
+      setPaymentError('This availability slot has expired or is no longer available. Please select a future time slot.');
+      setIsPaymentProcessing(false);
+      return;
+    }
+
     setIsPaymentProcessing(true);
     setPaymentError(null);
 
@@ -574,39 +562,45 @@ export const BookingView: React.FC<BookingViewProps> = ({ setActiveTab }) => {
                 </span>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {counselorSessionTypes.map((st) => {
-                  const isSelectedST = selectedSessionTypeObj.id === st.id;
-                  return (
-                    <div
-                      key={st.id}
-                      onClick={() => setSelectedSessionTypeId(st.id)}
-                      className={`p-5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between ${
-                        isSelectedST
-                          ? 'bg-gradient-to-br from-sky-50 to-cyan-50 border-sky-500 ring-2 ring-sky-500/30 shadow-md'
-                          : 'bg-white border-slate-200 hover:border-sky-300'
-                      }`}
-                    >
-                      <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-sm font-extrabold text-slate-900">{st.label}</span>
-                          <span className="px-2 py-0.5 bg-sky-100 text-sky-900 font-bold text-[10px] rounded-full border border-sky-200">
-                            {st.duration_minutes} Mins
+              {counselorSessionTypes.length === 0 ? (
+                <div className="p-6 text-center bg-slate-50 border border-dashed border-slate-200 rounded-2xl text-xs text-slate-500 font-medium">
+                  This counselor has not configured session options yet.
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {counselorSessionTypes.map((st) => {
+                    const isSelectedST = selectedSessionTypeObj?.id === st.id;
+                    return (
+                      <div
+                        key={st.id}
+                        onClick={() => setSelectedSessionTypeId(st.id)}
+                        className={`p-5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between ${
+                          isSelectedST
+                            ? 'bg-gradient-to-br from-sky-50 to-cyan-50 border-sky-500 ring-2 ring-sky-500/30 shadow-md'
+                            : 'bg-white border-slate-200 hover:border-sky-300'
+                        }`}
+                      >
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-sm font-extrabold text-slate-900">{st.label}</span>
+                            <span className="px-2 py-0.5 bg-sky-100 text-sky-900 font-bold text-[10px] rounded-full border border-sky-200">
+                              {st.duration_minutes} Mins
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-500 font-medium">100% Encrypted Video Format</p>
+                        </div>
+
+                        <div className="text-right">
+                          <span className="text-xl font-black text-emerald-700 block">₹{st.price}</span>
+                          <span className="text-[10px] font-bold text-sky-700">
+                            {isSelectedST ? 'Selected' : 'Select'}
                           </span>
                         </div>
-                        <p className="text-xs text-slate-500 font-medium">100% Encrypted Video Format</p>
                       </div>
-
-                      <div className="text-right">
-                        <span className="text-xl font-black text-emerald-700 block">₹{st.price}</span>
-                        <span className="text-[10px] font-bold text-sky-700">
-                          {isSelectedST ? 'Selected' : 'Select'}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
           {/* STEP B: Select Available Slot */}
